@@ -6,6 +6,7 @@ from matplotlib.patches import Rectangle
 from matplotlib.patches import Circle
 from matplotlib.collections import PatchCollection
 import matplotlib.lines as mlines
+import matplotlib.cm as cm
 
 x, y = 0, 1
 
@@ -73,11 +74,11 @@ tw_pol = np.array([pi, 3])
 # rudder angle if you are standing on boat
 # % -ve towards port (left)
 # % +ve towards starboard (right)
-dr = 0
+dr = pi/15
 
 # sail angle if you are standing on boat
 # angle of stern-ward end of sail to follow RH coord system
-ds = pi;   
+ds = pi/3;   
 
 
 
@@ -245,7 +246,8 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	                  boat_l, 
 	                  boat_w, 
 	                  angle=theta,
-	                  color='c')
+	                  color='c', 
+	                  alpha=0.5)
 
 
 	rudder_x = [pos[x] - boat_l/2, 
@@ -271,7 +273,7 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 		rudder_transx.append(rudder_trans[x])
 		rudder_transy.append(rudder_trans[y])
 
-	rudder = mlines.Line2D(rudder_transx, rudder_transy, linewidth=2, color='b')
+	rudder = mlines.Line2D(rudder_transx, rudder_transy, linewidth=2, color='b', alpha=0.5)
 
 
 
@@ -305,7 +307,7 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	print('sailtx', sail_transx)
 	print('sailty', sail_transy)
 
-	sail = mlines.Line2D(sail_transx, sail_transy, linewidth=2, color='k')
+	sail = mlines.Line2D(sail_transx, sail_transy, linewidth=2, color='k', alpha=0.5)
 
 
 	mast = Circle(pos, 0.01, color='k')
@@ -320,11 +322,34 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	ax1.add_line(rudder)
 	ax1.add_line(sail)
 
+	origin = [0], [0] # origin point
+
+	V = np.array([[1,1],[-2,2],[4,-7]])
+	# origin_x, origin_y, length_x, length_y
+	V = np.array([[1 , 1, 0, 0],
+		          [-2, 2, 0, 4],
+		          [4, -7, 5, 5]])
+
+	vectors = np.array([[pos[x], pos[y], L_s_car[x], L_s_car[y]], # sail lift
+		                [pos[x], pos[y], D_s_car[x], D_s_car[y]], # sail drag
+		                [rudder_transx[0],rudder_transy[0], L_r_car[x], L_r_car[y]],  # rudder lift
+		                [rudder_transx[0], rudder_transy[0], D_r_car[x], D_r_car[y]]]) # rudder drag
+
+	#ax1.quiver(*origin, V[:,0], V[:,1], color=['r','b','g'], scale=21)
+	
+
+	colors = cm.rainbow(np.linspace(0, 1, len(vectors)))
+
+	for V, c in zip(vectors, colors):
+		ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=1)
+
+
 	ax1.autoscale(enable=True, axis='both', tight=None)
-
-
-
 	plt.show()
+
+
+
+	#plt.show()
 
 
 
@@ -332,16 +357,23 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 # apparent wind
 aw_car, aw_pol = appWind()
 
-L_s = aero_force(part='sail', force='lift')
-D_s = aero_force(part='sail', force='drag')
-L_r = aero_force(part='rudder', force='lift')  
-D_r = aero_force(part='rudder', force='drag') 
+L_s_pol = aero_force(part='sail', force='lift')
+D_s_pol = aero_force(part='sail', force='drag')
+L_r_pol = aero_force(part='rudder', force='lift')  
+D_r_pol = aero_force(part='rudder', force='drag') 
+
+L_s_car = pol2cart(L_s_pol)
+D_s_car = pol2cart(D_s_pol)
+L_r_car = pol2cart(L_r_pol)
+D_r_car = pol2cart(D_r_pol)
 
 # print(f'{L_s}/n{D_s}/n{L_r}/n{D_r}')
-print(L_s)
-print(D_s)
-print(L_r)
-print(D_r)
+print()
+print("coordinates")
+print(L_s_pol, L_s_car)
+print(D_s_pol, D_s_car)
+print(L_r_pol, L_r_car)
+print(D_r_pol, D_r_car)
 
 
 plot_PMW(pos[x]-boat_l/2, pos[y]-boat_w/2, pos)
