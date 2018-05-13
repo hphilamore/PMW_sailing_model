@@ -1,5 +1,11 @@
 import numpy as np
 from numpy import pi
+import matplotlib.pyplot as plt
+import matplotlib
+from matplotlib.patches import Rectangle
+from matplotlib.patches import Circle
+from matplotlib.collections import PatchCollection
+import matplotlib.lines as mlines
 
 x, y = 0, 1
 
@@ -30,6 +36,16 @@ def safe_div(x,y):
 
 rho_air = 1.225;
 rho_water = 1000;
+
+# boat parameters
+boat_l = 1
+boat_w = 0.5
+rudder_l = 0.2
+sail_l = 0.8
+# points_x = [l/2, l/2, -l/2, -l/2, l/2]
+# points_y = [-w/2, w/2, w/2, -w/2, -w/2]
+# points = np.array([points_x, points_y])
+# points = np.reshape(points, (5, 2))
 
 # sail / rudder parameters
 A_s = 0.25;
@@ -220,6 +236,98 @@ def aero_force(part, force):
 		drag_angle = v_fluid_pol[0];
 		drag_force = 0.5 * rho * A * v_fluid_pol[1]**2 * CD
 		return np.array([drag_angle, drag_force])
+
+def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
+	fig, ax = plt.subplots()
+	patches = []
+	boat = Rectangle((starboard_stern_x, 
+					  starboard_stern_y), 
+	                  boat_l, 
+	                  boat_w, 
+	                  angle=theta,
+	                  color='c')
+
+
+	rudder_x = [pos[x] - boat_l/2, 
+	            pos[x] - boat_l/2 - rudder_l]
+
+	rudder_y = [pos[y], 
+				pos[y]]
+
+	rudder_angle = [theta, theta + dr]
+
+	rudder_transx = []
+	rudder_transy = []
+
+	for rx, ry, a in zip(rudder_x, 
+		                 rudder_y, 
+		                 rudder_angle):	
+		r = np.array([[rx],[ry]])
+
+		R = [[np.cos(a), np.sin(a)],
+			 [np.sin(a), np.cos(a)]]
+
+		rudder_trans = np.dot(R, r)
+		rudder_transx.append(rudder_trans[x])
+		rudder_transy.append(rudder_trans[y])
+
+	rudder = mlines.Line2D(rudder_transx, rudder_transy, linewidth=2, color='b')
+
+
+
+	sail_x = [pos[x] + sail_l/2, 
+	          pos[x] - sail_l/2]
+
+
+	sail_y = [pos[y], 
+			  pos[y]]
+
+	sail_angle = [theta + ds, theta + ds]
+
+	sail_transx = []
+	sail_transy = []
+
+	for rx, ry, a in zip(sail_x, 
+		                 sail_y, 
+		                 sail_angle):
+		r = np.array([[rx],[ry]])
+
+		R = [[np.cos(a), np.sin(a)],
+			 [np.sin(a), np.cos(a)]]
+
+		sail_trans = np.dot(R, r)
+		sail_transx.append(sail_trans[x])
+		sail_transy.append(sail_trans[y])
+	
+	print('sailx', sail_x)
+	print('saily', sail_y)
+	print('sail_angle', sail_angle)
+	print('sailtx', sail_transx)
+	print('sailty', sail_transy)
+
+	sail = mlines.Line2D(sail_transx, sail_transy, linewidth=2, color='k')
+
+
+	mast = Circle(pos, 0.01, color='k')
+
+
+	fig1 = plt.figure()
+	ax1 = fig1.add_subplot(111, aspect='equal')
+
+
+	ax1.add_patch(boat)
+	ax1.add_patch(mast)
+	ax1.add_line(rudder)
+	ax1.add_line(sail)
+
+	ax1.autoscale(enable=True, axis='both', tight=None)
+
+
+
+	plt.show()
+
+
+
                                    
 # apparent wind
 aw_car, aw_pol = appWind()
@@ -234,6 +342,9 @@ print(L_s)
 print(D_s)
 print(L_r)
 print(D_r)
+
+
+plot_PMW(pos[x]-boat_l/2, pos[y]-boat_w/2, pos)
 
 
 
