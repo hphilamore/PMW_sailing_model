@@ -238,6 +238,29 @@ def aero_force(part, force):
 		drag_force = 0.5 * rho * A * v_fluid_pol[1]**2 * CD
 		return np.array([drag_angle, drag_force])
 
+
+def sumAeroVectors(lift_car, drag_car):
+	"""
+	% Find the resultant of perpendicular lift or drag forces as polar
+	% components.
+	% - inputs:
+	%          lift....................... 2x1 array
+	%          lift : polar components  of lift force relative to PMW frame
+	%          drag....................... 2x1 array
+	%          drag : polar components  of drag force relative to PMW frame
+	% - output:
+	%          out....................... 2x1 array
+	%          out : Polar components of resultant force [mag; angle]
+	"""
+
+
+	f = lift_car + drag_car
+	print("f", f)
+	f_pol = cart2pol(f)
+	print("fpol", f)
+	return f_pol
+
+
 def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	fig, ax = plt.subplots()
 	patches = []
@@ -332,6 +355,7 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 
 	vectors = np.array([[pos[x], pos[y], L_s_car[x], L_s_car[y]], # sail lift
 		                [pos[x], pos[y], D_s_car[x], D_s_car[y]], # sail drag
+		                [pos[x], pos[y], F_s_car[x], F_s_car[y]], # sail force
 		                [rudder_transx[0],rudder_transy[0], L_r_car[x], L_r_car[y]],  # rudder lift
 		                [rudder_transx[0], rudder_transy[0], D_r_car[x], D_r_car[y]]]) # rudder drag
 
@@ -341,10 +365,12 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	colors = cm.rainbow(np.linspace(0, 1, len(vectors)))
 
 	for V, c in zip(vectors, colors):
-		ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=1)
+		ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
 
 
-	ax1.autoscale(enable=True, axis='both', tight=None)
+	#ax1.autoscale(enable=True, axis='both', tight=None)
+	ax1.set_xlim([-2, 2])
+	ax1.set_ylim([-2, 2])
 	plt.show()
 
 
@@ -374,6 +400,14 @@ print(L_s_pol, L_s_car)
 print(D_s_pol, D_s_car)
 print(L_r_pol, L_r_car)
 print(D_r_pol, D_r_car)
+
+F_s_pol = sumAeroVectors(L_s_car, D_s_car)  
+F_r_pol = sumAeroVectors(L_r_car, D_r_car)
+print("F_s_pol", F_s_pol)
+F_s_car = pol2cart(F_s_pol)
+
+print("F_r_pol", F_r_pol)
+F_r_car = pol2cart(F_r_pol)
 
 
 plot_PMW(pos[x]-boat_l/2, pos[y]-boat_w/2, pos)
