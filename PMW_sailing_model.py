@@ -99,7 +99,7 @@ v_pol = cart2pol(v_car)
 print('vpol', v_pol)
 theta = 0;
 w = 0;
-Z_init_state = [pos, theta, v_car, w]
+Z_init_state = [pos[x], pos[y], theta, v_pol[1] , w]
 
 # time 
 tspan = [0, 1];
@@ -391,7 +391,7 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	#ax1.autoscale(enable=True, axis='both', tight=None)
 	ax1.set_xlim([-2, 2])
 	ax1.set_ylim([-2, 2])
-	plt.show()
+	#plt.show()
 
 def dvdt():
 	"""
@@ -462,61 +462,54 @@ def dwdt():
 
 
 def param_solve(Z_state, time):
-                                   
-# apparent wind
 	
-	# global L_s_pol, D_s_pol, L_r_pol, D_r_pol, L_s_car, D_s_car, L_r_car, D_r_car, F_s_pol, F_r_pol, F_s_car, F_r_car
-	# L_s_pol = aero_force(part='sail', force='lift')
-	# D_s_pol = aero_force(part='sail', force='drag')
-	# L_r_pol = aero_force(part='rudder', force='lift')  
-	# D_r_pol = aero_force(part='rudder', force='drag') 
+	global L_s_pol, D_s_pol, L_r_pol, D_r_pol, L_s_car, D_s_car, L_r_car, D_r_car, F_s_pol, F_r_pol, F_s_car, F_r_car
+	L_s_pol = aero_force(part='sail', force='lift')
+	D_s_pol = aero_force(part='sail', force='drag')
+	L_r_pol = aero_force(part='rudder', force='lift')  
+	D_r_pol = aero_force(part='rudder', force='drag') 
 
-	# L_s_car = pol2cart(L_s_pol)
-	# D_s_car = pol2cart(D_s_pol)
-	# L_r_car = pol2cart(L_r_pol)
-	# D_r_car = pol2cart(D_r_pol)
+	L_s_car = pol2cart(L_s_pol)
+	D_s_car = pol2cart(D_s_pol)
+	L_r_car = pol2cart(L_r_pol)
+	D_r_car = pol2cart(D_r_pol)
 
-	# # print(f'{L_s}/n{D_s}/n{L_r}/n{D_r}')
-	# print()
-	# print("coordinates")
-	# print(L_s_pol, L_s_car)
-	# print(D_s_pol, D_s_car)
-	# print(L_r_pol, L_r_car)
-	# print(D_r_pol, D_r_car)
+	# print(f'{L_s}/n{D_s}/n{L_r}/n{D_r}')
+	print()
+	print("coordinates")
+	print(L_s_pol, L_s_car)
+	print(D_s_pol, D_s_car)
+	print(L_r_pol, L_r_car)
+	print(D_r_pol, D_r_car)
 
-	# F_s_pol = sumAeroVectors(L_s_car, D_s_car)  
-	# F_r_pol = sumAeroVectors(L_r_car, D_r_car)
-	# print("F_s_pol", F_s_pol)
-	# F_s_car = pol2cart(F_s_pol)
+	F_s_pol = sumAeroVectors(L_s_car, D_s_car)  
+	F_r_pol = sumAeroVectors(L_r_car, D_r_car)
+	print("F_s_pol", F_s_pol)
+	F_s_car = pol2cart(F_s_pol)
 
-	# print("F_r_pol", F_r_pol)
-	# F_r_car = pol2cart(F_r_pol)
+	print("F_r_pol", F_r_pol)
+	F_r_car = pol2cart(F_r_pol)
 
-	# dZdt = [dxdt(), 
-	#         dydt(), 
-	#         dthdt(), 
-	#         dvdt(), 
-	#         dwdt()]
+	dZdt = [dxdt(), 
+	        dydt(), 
+	        dthdt(), 
+	        dvdt(), 
+	         dwdt()]
 
-	dZdt = [1, 
-	        2, 
-	        3, 
-	        4, 
-	        3]
-
-	#plot_PMW(pos[x]-boat_l/2, pos[y]-boat_w/2, pos)
+	plot_PMW(pos[x]-boat_l/2, pos[y]-boat_w/2, pos)
 
 	return np.array(dZdt)
   
 
-time = np.arange(0, 20, 0.1)
+time = np.arange(0, 20, 1)
 #param_solve(Z_init_state, time)
 state = odeint(param_solve, Z_init_state, time)
 
-fig = figure()
-plot(time, state[:, 0], alpha=0.2)
-plot(time, state[:, 1], alpha=0.2)
-plot(time, state[:, 2], alpha=0.2)
+
+fig1, ax2 = plt.subplots()
+plt.plot(time, state[:, 0])
+plt.plot(time, state[:, 1])
+plt.plot(time, state[:, 2])
 plt.show()
 	
 
