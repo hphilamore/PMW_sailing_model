@@ -7,8 +7,22 @@ from matplotlib.patches import Circle
 from matplotlib.collections import PatchCollection
 import matplotlib.lines as mlines
 import matplotlib.cm as cm
+import matplotlib.animation as animation
+from scipy.integrate import odeint
 
 x, y = 0, 1
+
+p1 = 0.03;
+p2 = 40;
+p3 = -0.6;
+p4 = 200;
+p5 = 1500;
+p6 = 0.5;
+p7 = 0.5;
+p8 = 2;
+p9 = 120;
+p10 = 400;
+p11 = 0.2;
 
 
 def cart2pol(coords):
@@ -34,6 +48,29 @@ def pol2cart(coords):
 def safe_div(x,y):
     if y==0: return 0
     return x/y
+
+def appWind():
+	"""
+	% Uses polar components of true wind and cartesian components of 
+	% boat velocity to compute polar coordinates of apparent wind:
+	% - inputs:
+	%          tw : true wind velocity
+	%          v : PMW velocity 
+	% - output:
+	%          out....................... 2x1 array
+	%          out : polar coordinates of apparent wind (if standing on PWM boat)
+	%				 relative to global frame 
+	"""
+
+	tw_car = pol2cart(tw_pol)
+	#print('tw_car', tw_car)
+
+	aw_car = np.array([(tw_car[x] - v_car[x]), 
+					   (tw_car[y] - v_car[y])]) 
+
+	aw_pol = cart2pol(aw_car)
+
+	return aw_car, aw_pol
 
 rho_air = 1.225;
 rho_water = 1000;
@@ -62,7 +99,7 @@ v_pol = cart2pol(v_car)
 print('vpol', v_pol)
 theta = 0;
 w = 0;
-Z_init = [pos, theta, v_car, w]
+Z_init_state = [pos, theta, v_car, w]
 
 # time 
 tspan = [0, 1];
@@ -80,32 +117,13 @@ dr = pi/15
 # angle of stern-ward end of sail to follow RH coord system
 ds = pi/3;   
 
+aw_car, aw_pol = appWind()
 
 
 
 
-def appWind():
-	"""
-	% Uses polar components of true wind and cartesian components of 
-	% boat velocity to compute polar coordinates of apparent wind:
-	% - inputs:
-	%          tw : true wind velocity
-	%          v : PMW velocity 
-	% - output:
-	%          out....................... 2x1 array
-	%          out : polar coordinates of apparent wind (if standing on PWM boat)
-	%				 relative to global frame 
-	"""
 
-	tw_car = pol2cart(tw_pol)
-	#print('tw_car', tw_car)
 
-	aw_car = np.array([(tw_car[x] - v_car[x]), 
-					   (tw_car[y] - v_car[y])]) 
-
-	aw_pol = cart2pol(aw_car)
-
-	return aw_car, aw_pol
 
 def attack_angle(area, v_fluid_car, plane_angle):
 	"""
@@ -262,7 +280,7 @@ def sumAeroVectors(lift_car, drag_car):
 
 
 def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
-	fig, ax = plt.subplots()
+	#fig, ax = plt.subplots()
 	patches = []
 	boat = Rectangle((starboard_stern_x, 
 					  starboard_stern_y), 
@@ -336,8 +354,10 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	mast = Circle(pos, 0.01, color='k')
 
 
-	fig1 = plt.figure()
-	ax1 = fig1.add_subplot(111, aspect='equal')
+	# fig1 = plt.figure()
+	# ax1 = fig1.add_subplot(111, aspect='equal')
+
+	fig1, ax1 = plt.subplots()
 
 
 	ax1.add_patch(boat)
@@ -373,44 +393,132 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	ax1.set_ylim([-2, 2])
 	plt.show()
 
+def dvdt():
+	"""
+	% The acceleration of the PMW in the direction of the heading (theta). 
+	% Component of wind force on sail acting parallel to heading direction  
+	% minus the product of:
+	% - component of water force on rudder acting parallel to heading direction
+	% - rudder break coefficient
+	% - input:
+	%          v : velocity
+	%          version : old model or new model
+	% - output:
+	%          out : acceleration
+	"""
+
+	return ((F_s_car[x] * np.cos(F_s_car[y]) + # sail force  
+             F_r_car[x] * np.cos(F_r_car[y]))  # rudder force										     # moment due to rotational drag
+             / p10) 						   # mass
 
 
-	#plt.show()
+def dxdt():
+	"""
+	The horizontal velocity of the PMW. 
+	"""
+	a_car = dvdt()
+	print("a_car", a_car)
+	return v_car[0] + a_car * np.cos(theta)
+
+def dydt():
+	"""
+	The vertical velocity of the PMW. 
+	"""
+	a_car = dvdt()
+	return  v_car[1] + a_car * np.sin(theta)
+
+
+def dthdt():
+	"""
+	%--------------------------------------------------------------------------
+	% The angular velocity of the PMW. 
+	%          out : angular velocity
+	%--------------------------------------------------------------------------
+	"""
+	return w + dwdt()
 
 
 
+
+def dwdt():
+	"""
+	The acceleration of the PMW in the direction of the heading (theta). 
+	% Component of wind force on sail acting parallel to heading direction  
+	% minus the product of:
+	% - component of water force on rudder acting parallel to heading direction
+	% - rudder break coefficient
+	% - input:
+	%          v : velocity
+	%          v : angular velocity
+	%          version : old model or new model
+	% - output:
+	%          out : acceleration
+	"""
+
+	return ((F_s_car[x] * np.sin(-F_s_car[y]) * (p6 - p7 * np.cos(ds)) + # moment due to force on sails 
+             F_r_car[x] * np.sin(-F_r_car[y]) * p8 * np.cos(dr) +     # moment due to force on rudder
+             p3 * v_pol[1] * w) 											     # moment due to rotational drag
+             / p10);  
+
+
+def param_solve(Z_state, time):
                                    
 # apparent wind
-aw_car, aw_pol = appWind()
+	
+	# global L_s_pol, D_s_pol, L_r_pol, D_r_pol, L_s_car, D_s_car, L_r_car, D_r_car, F_s_pol, F_r_pol, F_s_car, F_r_car
+	# L_s_pol = aero_force(part='sail', force='lift')
+	# D_s_pol = aero_force(part='sail', force='drag')
+	# L_r_pol = aero_force(part='rudder', force='lift')  
+	# D_r_pol = aero_force(part='rudder', force='drag') 
 
-L_s_pol = aero_force(part='sail', force='lift')
-D_s_pol = aero_force(part='sail', force='drag')
-L_r_pol = aero_force(part='rudder', force='lift')  
-D_r_pol = aero_force(part='rudder', force='drag') 
+	# L_s_car = pol2cart(L_s_pol)
+	# D_s_car = pol2cart(D_s_pol)
+	# L_r_car = pol2cart(L_r_pol)
+	# D_r_car = pol2cart(D_r_pol)
 
-L_s_car = pol2cart(L_s_pol)
-D_s_car = pol2cart(D_s_pol)
-L_r_car = pol2cart(L_r_pol)
-D_r_car = pol2cart(D_r_pol)
+	# # print(f'{L_s}/n{D_s}/n{L_r}/n{D_r}')
+	# print()
+	# print("coordinates")
+	# print(L_s_pol, L_s_car)
+	# print(D_s_pol, D_s_car)
+	# print(L_r_pol, L_r_car)
+	# print(D_r_pol, D_r_car)
 
-# print(f'{L_s}/n{D_s}/n{L_r}/n{D_r}')
-print()
-print("coordinates")
-print(L_s_pol, L_s_car)
-print(D_s_pol, D_s_car)
-print(L_r_pol, L_r_car)
-print(D_r_pol, D_r_car)
+	# F_s_pol = sumAeroVectors(L_s_car, D_s_car)  
+	# F_r_pol = sumAeroVectors(L_r_car, D_r_car)
+	# print("F_s_pol", F_s_pol)
+	# F_s_car = pol2cart(F_s_pol)
 
-F_s_pol = sumAeroVectors(L_s_car, D_s_car)  
-F_r_pol = sumAeroVectors(L_r_car, D_r_car)
-print("F_s_pol", F_s_pol)
-F_s_car = pol2cart(F_s_pol)
+	# print("F_r_pol", F_r_pol)
+	# F_r_car = pol2cart(F_r_pol)
 
-print("F_r_pol", F_r_pol)
-F_r_car = pol2cart(F_r_pol)
+	# dZdt = [dxdt(), 
+	#         dydt(), 
+	#         dthdt(), 
+	#         dvdt(), 
+	#         dwdt()]
 
+	dZdt = [1, 
+	        2, 
+	        3, 
+	        4, 
+	        3]
 
-plot_PMW(pos[x]-boat_l/2, pos[y]-boat_w/2, pos)
+	#plot_PMW(pos[x]-boat_l/2, pos[y]-boat_w/2, pos)
+
+	return np.array(dZdt)
+  
+
+time = np.arange(0, 20, 0.1)
+#param_solve(Z_init_state, time)
+state = odeint(param_solve, Z_init_state, time)
+
+fig = figure()
+plot(time, state[:, 0], alpha=0.2)
+plot(time, state[:, 1], alpha=0.2)
+plot(time, state[:, 2], alpha=0.2)
+plt.show()
+	
 
 
 
