@@ -97,13 +97,14 @@ ARs = 5
 ARr = 0.5
 
 # intial conditions
-pos = np.array([0, 0])
+pos_car = np.array([0, 0])
+pos_pol = cart2pol(pos_car)
 v_car = np.array([0, 0])
 v_pol = cart2pol(v_car)
 print('vpol', v_pol)
 # theta = 0;
 w = 0;
-Z_init_state = [pos[x], pos[y], theta, v_pol[1] , w]
+Z_init_state = [pos_car[x], pos_car[y], theta, v_pol[1] , w]
 
 # time 
 tspan = [0, 1];
@@ -283,32 +284,44 @@ def sumAeroVectors(lift_car, drag_car):
 	return f_pol
 
 
-def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
+def plot_PMW(boatPosX, 
+			 boatPosY, 
+			 boatAngle,
+			 sailAngle,
+			 rudderAngle):
 	#fig, ax = plt.subplots()
 	patches = []
-	boat = Rectangle((starboard_stern_x, 
-					  starboard_stern_y), 
+	# boat = Rectangle((starboard_stern_x, 
+	# 				  starboard_stern_y), 
+	#                   boat_l, 
+	#                   boat_w, 
+	#                   angle=theta,
+	#                   color='c', 
+	#                   alpha=0.5)
+	boat = Rectangle((boatPosX - boat_l, 
+					  boatPosY - boat_w), 
 	                  boat_l, 
 	                  boat_w, 
-	                  angle=theta,
+	                  angle=boatAngle,
 	                  color='c', 
 	                  alpha=0.5)
 
+	rudder_x = [boatPosX - boat_l/2, 
+	            boatPosY - boat_l/2 - rudder_l]
 
-	rudder_x = [pos[x] - boat_l/2, 
-	            pos[x] - boat_l/2 - rudder_l]
+	rudder_y = [boatPosY, 
+				boatPosY]
 
-	rudder_y = [pos[y], 
-				pos[y]]
-
-	rudder_angle = [theta, theta + dr]
+	rudder_a = [boatAngle, 
+				boatAngle + rudderAngle]
 
 	rudder_transx = []
 	rudder_transy = []
 
 	for rx, ry, a in zip(rudder_x, 
 		                 rudder_y, 
-		                 rudder_angle):	
+		                 rudder_a):	
+
 		r = np.array([[rx],[ry]])
 
 		R = [[np.cos(a), np.sin(a)],
@@ -321,22 +334,22 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	rudder = mlines.Line2D(rudder_transx, rudder_transy, linewidth=2, color='b', alpha=0.5)
 
 
-	sail_x = [pos[x] + sail_l/2, 
-	          pos[x] - sail_l/2]
+	sail_x = [boatPosX + sail_l/2, 
+	          boatPosY - sail_l/2]
 
+	sail_y = [boatPosX, 
+			  boatPosY]
 
-	sail_y = [pos[y], 
-			  pos[y]]
-
-	sail_angle = [theta + ds, theta + ds]
+	sail_angle = [boatAngle + sailAngle, 
+				  boatAngle + sailAngle]
 
 	sail_transx = []
 	sail_transy = []
 
-	for rx, ry, a in zip(sail_x, 
+	for sx, sy, a in zip(sail_x, 
 		                 sail_y, 
 		                 sail_angle):
-		r = np.array([[rx],[ry]])
+		r = np.array([[sx],[sy]])
 
 		R = [[np.cos(a), np.sin(a)],
 			 [np.sin(a), np.cos(a)]]
@@ -354,7 +367,7 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	sail = mlines.Line2D(sail_transx, sail_transy, linewidth=2, color='k', alpha=0.5)
 
 
-	mast = Circle(pos, 0.01, color='k')
+	mast = Circle((boatPosX, boatPosY), 0.01, color='k')
 
 
 	# fig1 = plt.figure()
@@ -470,7 +483,7 @@ def dwdt():
 
 def param_solve(Z_state, time):
 
-	print('printing globals', pos[x], pos[y], theta, v_pol[1] , w)
+	
 
 	aw_car, aw_pol = appWind()
 	
@@ -512,11 +525,11 @@ def param_solve(Z_state, time):
 	        dvdt(), 
 	        dwdt()]
 
-	plot_PMW(pos[x]-boat_l/2, pos[y]-boat_w/2, pos)
+	#plot_PMW(pos_car[x]-boat_l/2, pos_car[y]-boat_w/2, pos_car)
 
 	# update model params
-	pos[x] += dxdt()
-	pos[y] += dydt()
+	pos_car[x] += dxdt()
+	pos_car[y] += dydt()
 	#theta += dthdt()
 	v_pol[1] += dvdt()
 	v_car = pol2cart(v_pol)
