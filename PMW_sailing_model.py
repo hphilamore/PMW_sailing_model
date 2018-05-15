@@ -24,6 +24,10 @@ p9 = 120;
 p10 = 400;
 p11 = 0.2;
 
+theta = 0;
+
+fig1, ax1 = plt.subplots()
+
 
 def cart2pol(coords):
 	x = coords[0]
@@ -97,7 +101,7 @@ pos = np.array([0, 0])
 v_car = np.array([0, 0])
 v_pol = cart2pol(v_car)
 print('vpol', v_pol)
-theta = 0;
+# theta = 0;
 w = 0;
 Z_init_state = [pos[x], pos[y], theta, v_pol[1] , w]
 
@@ -317,7 +321,6 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	rudder = mlines.Line2D(rudder_transx, rudder_transy, linewidth=2, color='b', alpha=0.5)
 
 
-
 	sail_x = [pos[x] + sail_l/2, 
 	          pos[x] - sail_l/2]
 
@@ -357,7 +360,7 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 	# fig1 = plt.figure()
 	# ax1 = fig1.add_subplot(111, aspect='equal')
 
-	fig1, ax1 = plt.subplots()
+	# fig1, ax1 = plt.subplots()
 
 
 	ax1.add_patch(boat)
@@ -378,14 +381,18 @@ def plot_PMW(starboard_stern_x, starboard_stern_y, centre_boat_pos):
 		                [pos[x], pos[y], F_s_car[x], F_s_car[y]], # sail force
 		                [rudder_transx[0],rudder_transy[0], L_r_car[x], L_r_car[y]],  # rudder lift
 		                [rudder_transx[0], rudder_transy[0], D_r_car[x], D_r_car[y]]]) # rudder drag
-
+	labels = ['Lsail', 'Dsail', 'Fsail', 'Lrud', 'Drud', 'Frud']
 	#ax1.quiver(*origin, V[:,0], V[:,1], color=['r','b','g'], scale=21)
+	# QV1 = plt.quiver(x, y, u1, v1, color='r')
+	# plt.quiverkey(QV1, 1.2, 0.515, 2, 'arrow 1', coordinates='data')
 	
 
 	colors = cm.rainbow(np.linspace(0, 1, len(vectors)))
 
-	for V, c in zip(vectors, colors):
-		ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
+	for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
+		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
+		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
+		plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 
 
 	#ax1.autoscale(enable=True, axis='both', tight=None)
@@ -462,19 +469,27 @@ def dwdt():
 
 
 def param_solve(Z_state, time):
+
+	print('printing globals', pos[x], pos[y], theta, v_pol[1] , w)
+
+	aw_car, aw_pol = appWind()
 	
-	global L_s_pol, D_s_pol, L_r_pol, D_r_pol, L_s_car, D_s_car, L_r_car, D_r_car, F_s_pol, F_r_pol, F_s_car, F_r_car
+	global L_s_pol, D_s_pol, L_r_pol, D_r_pol
+	global L_s_car, D_s_car, L_r_car, D_r_car
+	global F_s_pol, F_r_pol, F_s_car, F_r_car
+
+	# calculate lift and drag force
 	L_s_pol = aero_force(part='sail', force='lift')
 	D_s_pol = aero_force(part='sail', force='drag')
 	L_r_pol = aero_force(part='rudder', force='lift')  
 	D_r_pol = aero_force(part='rudder', force='drag') 
 
+	# calculate lift and drag, polar coords
 	L_s_car = pol2cart(L_s_pol)
 	D_s_car = pol2cart(D_s_pol)
 	L_r_car = pol2cart(L_r_pol)
 	D_r_car = pol2cart(D_r_pol)
 
-	# print(f'{L_s}/n{D_s}/n{L_r}/n{D_r}')
 	print()
 	print("coordinates")
 	print(L_s_pol, L_s_car)
@@ -482,21 +497,30 @@ def param_solve(Z_state, time):
 	print(L_r_pol, L_r_car)
 	print(D_r_pol, D_r_car)
 
+	# calculate sail and rudder force
 	F_s_pol = sumAeroVectors(L_s_car, D_s_car)  
 	F_r_pol = sumAeroVectors(L_r_car, D_r_car)
 	print("F_s_pol", F_s_pol)
 	F_s_car = pol2cart(F_s_pol)
-
 	print("F_r_pol", F_r_pol)
 	F_r_car = pol2cart(F_r_pol)
 
+	# 
 	dZdt = [dxdt(), 
 	        dydt(), 
 	        dthdt(), 
 	        dvdt(), 
-	         dwdt()]
+	        dwdt()]
 
 	plot_PMW(pos[x]-boat_l/2, pos[y]-boat_w/2, pos)
+
+	# update model params
+	pos[x] += dxdt()
+	pos[y] += dydt()
+	#theta += dthdt()
+	v_pol[1] += dvdt()
+	v_car = pol2cart(v_pol)
+
 
 	return np.array(dZdt)
   
@@ -506,11 +530,27 @@ time = np.arange(0, 20, 1)
 state = odeint(param_solve, Z_init_state, time)
 
 
-fig1, ax2 = plt.subplots()
-plt.plot(time, state[:, 0])
-plt.plot(time, state[:, 1])
-plt.plot(time, state[:, 2])
+fig2, ax2 = plt.subplots()
+#fig2 = plt.figure()
+for s0, s1 in zip(state[:, 0], state[:, 1]):
+	print((s0, s1), (s1, s0))
+	rudder = mlines.Line2D((s0, s1), (s1, s0), linewidth=2, color='b', alpha=0.5)
+	ax2.add_line(rudder)
+plt.plot(time, state[:, 0], alpha=0.5)
+plt.plot(time, state[:, 1], alpha=0.5)
+plt.plot(time, state[:, 2], alpha=0.5)
+
+
+#plot(state[:, 0], state[:, 1], 'b-', alpha=0.2)
+
+# def animate(i):
+#     plt.plot(time, state[:, 0], 'b-')
+#     plt.plot(state[0:i, 0], state[0:i, 1], 'b-')
+
+# ani = animation.FuncAnimation(fig2, animate, frames = 100, interval=200)
+# ani
 plt.show()
+
 	
 
 
