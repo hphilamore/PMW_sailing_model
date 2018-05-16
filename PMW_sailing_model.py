@@ -457,7 +457,29 @@ def Transform2D(points, origin, angle, translation=0):
 # 			[-sin(ang),cos(ang)]])
 # 		)+cnt
 
-#def plot_rudder()
+#
+
+def plot_rudder(boatPos_pol,
+			  boatAngle,
+			  rudderAngle):
+
+	global_origin = np.array([0,0])
+	boatPos_car = cart2pol(boatPos_pol)
+
+	rudder = np.array([[- boat_l/2,            0],
+		                   [- boat_l/2 - rudder_l, 0]])
+
+	rudder = Transform2D(rudder, np.array([- boat_l/2, 0]), rudderAngle)
+	rudder = Transform2D(rudder, global_origin, boatAngle, boatPos_car)
+
+	
+	# plt.scatter(boatPos_car[x], boatPos_car[y])
+	# plt.plot(boat[:,0], boat[:,1],lw=1) 
+	# plt.plot(rudder[:,0], rudder[:,1],lw=1) 
+	plt.plot(rudder[:,0], rudder[:,1],lw=1) 
+	#ax1.set_aspect('equal', 'box')
+
+
 
 def plot_boat(boatPos_pol,
 			  boatAngle,
@@ -482,16 +504,26 @@ def plot_boat(boatPos_pol,
 	
 
 	# 
-	rudder = np.array([[- boat_l/2,            0],
-	                   [- boat_l/2 - rudder_l, 0]])
+	# rudder = np.array([[- boat_l/2,            0],
+	#                    [- boat_l/2 - rudder_l, 0]])
 
-	rudder = Transform2D(rudder, np.array([- boat_l/2, 0]), rudderAngle)
-	rudder = Transform2D(rudder, global_origin, boatAngle, boatPos_car)
+	
+	# rudder = Transform2D(rudder, np.array([- boat_l/2, 0]), rudderAngle)
+	# rudder = Transform2D(rudder, global_origin, boatAngle, boatPos_car)
+	# plt.plot(rudder[:,0], rudder[:,1],lw=1) 
+
+	sail = np.array([[- sail_l/2, 0],
+	                 [sail_l/2, 0. ]])
+
+	sail = Transform2D(sail, global_origin, sailAngle)
+	sail = Transform2D(sail, global_origin, boatAngle, boatPos_car)
+	plt.plot(sail[:,0], sail[:,1],lw=1) 
 
 	
 	plt.scatter(boatPos_car[x], boatPos_car[y])
 	plt.plot(boat[:,0], boat[:,1],lw=1) 
-	plt.plot(rudder[:,0], rudder[:,1],lw=1) 
+	
+	plot_rudder(boatPos_pol,  boatAngle,  rudderAngle)
 	
 	ax1.set_aspect('equal', 'box') # equal aspect ratio, tight limits
 	#ax1.axis('equal')              # equal aspect ratio
