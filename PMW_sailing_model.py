@@ -26,7 +26,7 @@ p11 = 0.2;
 
 
 
-fig1, ax1 = plt.subplots()
+#fig1, ax1 = plt.subplots()
 
 
 def cart2pol(coords):
@@ -418,29 +418,245 @@ def plot_PMW(boatPosX,
 		          [-2, 2, 0, 4],
 		          [4, -7, 5, 5]])
 
-	vectors = np.array([[pos[x], pos[y], L_s_car[x], L_s_car[y]], # sail lift
-		                [pos[x], pos[y], D_s_car[x], D_s_car[y]], # sail drag
-		                [pos[x], pos[y], F_s_car[x], F_s_car[y]], # sail force
-		                [rudder_transx[0],rudder_transy[0], L_r_car[x], L_r_car[y]],  # rudder lift
-		                [rudder_transx[0], rudder_transy[0], D_r_car[x], D_r_car[y]]]) # rudder drag
-	labels = ['Lsail', 'Dsail', 'Fsail', 'Lrud', 'Drud', 'Frud']
-	#ax1.quiver(*origin, V[:,0], V[:,1], color=['r','b','g'], scale=21)
-	# QV1 = plt.quiver(x, y, u1, v1, color='r')
-	# plt.quiverkey(QV1, 1.2, 0.515, 2, 'arrow 1', coordinates='data')
+	# vectors = np.array([[pos[x], pos[y], L_s_car[x], L_s_car[y]], # sail lift
+	# 	                [pos[x], pos[y], D_s_car[x], D_s_car[y]], # sail drag
+	# 	                [pos[x], pos[y], F_s_car[x], F_s_car[y]], # sail force
+	# 	                [rudder_transx[0],rudder_transy[0], L_r_car[x], L_r_car[y]],  # rudder lift
+	# 	                [rudder_transx[0], rudder_transy[0], D_r_car[x], D_r_car[y]]]) # rudder drag
+	# labels = ['Lsail', 'Dsail', 'Fsail', 'Lrud', 'Drud', 'Frud']
+	# #ax1.quiver(*origin, V[:,0], V[:,1], color=['r','b','g'], scale=21)
+	# # QV1 = plt.quiver(x, y, u1, v1, color='r')
+	# # plt.quiverkey(QV1, 1.2, 0.515, 2, 'arrow 1', coordinates='data')
 	
 
-	colors = cm.rainbow(np.linspace(0, 1, len(vectors)))
+	# colors = cm.rainbow(np.linspace(0, 1, len(vectors)))
 
-	for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
-		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
+	# for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
+	# 	# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
+	# 	Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
+	# 	plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 
 
 	#ax1.autoscale(enable=True, axis='both', tight=None)
-	ax1.set_xlim([-2, 2])
-	ax1.set_ylim([-2, 2])
+	ax1.set_xlim([0, 4])
+	ax1.set_ylim([0, 4])
 	#plt.show()
+
+def Transform2D(points, origin, angle, translation):
+	'''
+	pts = {} Rotates points(nx2) about center cnt(2) by angle ang(1) in radian
+	'''
+
+	R = np.array([[np.cos(angle), np.sin(angle)],
+                  [np.sin(angle), np.cos(angle)]])
+
+	return np.dot(points-origin, R) + origin + translation
+
+# return dot(pts-cnt,
+# 		ar([[cos(ang),sin(ang)],
+# 			[-sin(ang),cos(ang)]])
+# 		)+cnt
+
+def plot_boat(boatPos_pol,
+			  boatAngle,
+			  sailAngle,
+			  rudderAngle):
+	# #fig, ax = plt.subplots()
+	# patches = []
+
+	boatPos_car = cart2pol(boatPos_pol)
+
+	boat = np.array([[boat_l/2,  boat_w/2],
+					 [-boat_l/2, boat_w/2],
+					 [-boat_l/2, -boat_w/2],
+					 [boat_l/2,  -boat_w/2],
+					 [boat_l/2,  boat_w/2]])
+
+	boat = Transform2D(boat, boatAngle, boatPos_car, boatPos_car)
+
+	plt.plot(boat[:,0], boat[:,1],lw=1,color='k') 
+	plt.scatter(boatPos_car[x], boatPos_car[y])
+
+	# plot(*pts.T,lw=5,color='k') 
+
+	# t_start = ax1.transData
+	# t = matplotlib.transforms.Affine2D().rotate_deg(-boatAngle)
+	# t_end = t_start + t
+
+	# boat.set_transform(t_end)
+
+
+	# def rotate_point(point, origin, angle):
+	# 	"""
+	# 	Rotates a point about the origin by the angle given
+	# 	"""
+
+	# 	x, y = 0, 1
+
+	# 	# local frame of ref defined by origin
+	# 	point -= origin
+
+	# 	#rotate
+	# 	R = np.array([[np.cos(angle), np.sin(angle)],
+	# 		          [np.sin(angle), np.cos(angle)]])
+
+	# 	point = np.dot(R, point)
+
+	# 	# original frame of ref
+	# 	point += origin
+
+		#return point
+
+
+
+	# boat = Rectangle((boatPosX - boat_l, 
+	# 			      boatPosY - boat_w), 
+ #                  boat_l, 
+ #                  boat_w, 
+ #                  angle=boatAngle,
+ #                  color='c', 
+	#                   alpha=0.5)
+
+	# print('rudder_l', rudder_l)
+
+	# rudder_x = np.array([boatPosX - boat_l/2, 
+	#                      boatPosX - boat_l/2 - rudder_l])
+
+	# rudder_y = np.array([boatPosY, 
+	# 			         boatPosY])
+
+	# rudder_a = np.array([0, 
+	# 					 rudderAngle])
+
+	
+	# rotate rudder in boat frame of ref
+	# translate rudder to local frame of reference
+	# rudder_x -= (boatPosX - boat_l/2)
+	# rudder_y -= boatPosY
+
+	# # rotate about pivot
+	# rudder_transx = []
+	# rudder_transy = []
+	# for rx, ry, a in zip(rudder_x, 
+	# 	                 rudder_y, 
+	# 	                 rudder_a):	
+
+	# 	r = np.array([[rx],[ry]])
+
+	# 	R = np.array([[np.cos(a), np.sin(a)],
+	# 		 		  [np.sin(a), np.cos(a)]])
+
+	# 	rudder_trans = np.dot(R, r)
+	# 	rudder_transx.append(rudder_trans[x])
+	# 	rudder_transy.append(rudder_trans[y])
+
+	# # express new coords in local frame of reference
+	# rudder_x = np.array(rudder_transx) + (boatPosX - boat_l/2)
+	# rudder_y = np.array(rudder_transy) + (boatPosY) 
+
+
+	# rotate rudder in global frame of ref
+	# rudder_transx = []
+	# rudder_transy = []
+	# for rx, ry in zip(rudder_x, 
+	# 	              rudder_y):	
+
+	# 	r = np.array([[rx],[ry]])
+
+	# 	R = np.array([[np.cos(boatAngle), np.sin(boatAngle)],
+	# 		 [np.sin(boatAngle), np.cos(boatAngle)]])
+
+	# 	rudder_trans = np.dot(R, r)
+	# 	rudder_transx.append(rudder_trans[x])
+	# 	rudder_transy.append(rudder_trans[y])
+
+	# rudder = mlines.Line2D(rudder_transx, rudder_transy, linewidth=2, color='b', alpha=0.5)
+
+	#rudder = mlines.Line2D(rudder_x, rudder_y, linewidth=2, color='b', alpha=0.5)
+
+
+	# sail_x = [boatPosX + sail_l/2, 
+	#           boatPosY - sail_l/2]
+
+	# sail_y = [boatPosX, 
+	# 		  boatPosY]
+
+	# sail_angle = [boatAngle + sailAngle, 
+	# 			  boatAngle + sailAngle]
+
+	# sail_transx = []
+	# sail_transy = []
+
+	# for sx, sy, a in zip(sail_x, 
+	# 	                 sail_y, 
+	# 	                 sail_angle):
+	# 	r = np.array([[sx],[sy]])
+
+	# 	R = [[np.cos(a), np.sin(a)],
+	# 		 [np.sin(a), np.cos(a)]]
+
+	# 	sail_trans = np.dot(R, r)
+	# 	sail_transx.append(sail_trans[x])
+	# 	sail_transy.append(sail_trans[y])
+	
+	# print('sailx', sail_x)
+	# print('saily', sail_y)
+	# print('sail_angle', sail_angle)
+	# print('sailtx', sail_transx)
+	# print('sailty', sail_transy)
+
+	# sail = mlines.Line2D(sail_transx, sail_transy, linewidth=2, color='k', alpha=0.5)
+
+
+	# mast = Circle((boatPosX, boatPosY), 0.01, color='k')
+
+
+	# # fig1 = plt.figure()
+	# # ax1 = fig1.add_subplot(111, aspect='equal')
+
+	#fig1, ax1 = plt.subplots()
+
+
+	#ax1.add_patch(boat)
+	# ax1.add_patch(mast)
+	#ax1.add_line(rudder)
+	# # ax1.add_line(sail)
+	#plt.plot(*boat.T,lw=5,color='k') 
+	#plt.plot([boat[:,0][0],boat[:,1][0]], [boat[:,0][1],boat[:,1][1]],lw=1,color='r') 
+	# print(boat[:,0])
+	# print(boat[:,1])
+
+
+	# origin = [0], [0] # origin point
+
+	# V = np.array([[1,1],[-2,2],[4,-7]])
+	# # origin_x, origin_y, length_x, length_y
+	# V = np.array([[1 , 1, 0, 0],
+	# 	          [-2, 2, 0, 4],
+	# 	          [4, -7, 5, 5]])
+
+	# # vectors = np.array([[pos[x], pos[y], L_s_car[x], L_s_car[y]], # sail lift
+	# # 	                [pos[x], pos[y], D_s_car[x], D_s_car[y]], # sail drag
+	# # 	                [pos[x], pos[y], F_s_car[x], F_s_car[y]], # sail force
+	# # 	                [rudder_transx[0],rudder_transy[0], L_r_car[x], L_r_car[y]],  # rudder lift
+	# # 	                [rudder_transx[0], rudder_transy[0], D_r_car[x], D_r_car[y]]]) # rudder drag
+	# # labels = ['Lsail', 'Dsail', 'Fsail', 'Lrud', 'Drud', 'Frud']
+	# # #ax1.quiver(*origin, V[:,0], V[:,1], color=['r','b','g'], scale=21)
+	# # # QV1 = plt.quiver(x, y, u1, v1, color='r')
+	# # # plt.quiverkey(QV1, 1.2, 0.515, 2, 'arrow 1', coordinates='data')
+	
+
+	# # colors = cm.rainbow(np.linspace(0, 1, len(vectors)))
+
+	# # for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
+	# # 	# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
+	# # 	Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
+	# # 	plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
+
+
+	# #ax1.autoscale(enable=True, axis='both', tight=None)
+	# ax1.set_xlim([0, 4])
+	# ax1.set_ylim([0, 4])
 
 def dvdt(Fs_pol, Fr_pol, theta):
 	"""
@@ -668,28 +884,53 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 
 # main program
 time = np.arange(0, 20, 1)
+time = np.arange(10)
 
 #sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 data = {'sail_angle' : [], 'rudder_angle' : [], 'sail_area' : [], 'position' : [], 'velocity' : [], 'heading' : [], 'angular_vel' : []}
+data["sail_angle"].append(sa)
+data["rudder_angle"].append(ra)
+# data["position"].append(Z_init_state[0])
+# data["velocity"].append(Z_init_state[1])
+# data["heading"].append(Z_init_state[2])	
+# data["angular_vel"].append(Z_init_state[3])
 
 
 for t in time:
-
-
-	state = param_solve(Z_init_state)
-
-	for i in range(len(Z_init_state)):
-		Z_init_state[i] = Z_init_state[i] + state[i]
-		
+	data["sail_angle"].append(sa)
+	data["rudder_angle"].append(ra)	
 	data["position"].append(Z_init_state[0])
 	data["velocity"].append(Z_init_state[1])
 	data["heading"].append(Z_init_state[2])	
 	data["angular_vel"].append(Z_init_state[3])
 
+	state = param_solve(Z_init_state)
+
+	for i in range(len(Z_init_state)):
+		Z_init_state[i] = Z_init_state[i] + state[i]
+
 #state = odeint(param_solve, Z_init_state, time)
 print(data["sail_angle"])
+print(data["position"])
 
-fig2, ax2 = plt.subplots()
+fig1, ax1 = plt.subplots()
+#fig2, ax2 = plt.subplots()
+# plot_PMW(data["position"][x][0], 
+# 	     data["position"][y], 
+# 	     data["heading"], 
+# 	     data["sail_angle"], 
+# 	     data["rudder_angle"])
+
+#plt.plot(time, data["position"])
+#plt.plot(time, data["heading"])
+
+for position, heading, sail_angle, rudder_angle in zip(data["position"], 
+													   data["heading"],	
+													   data["sail_angle"],
+													   data["rudder_angle"]):
+	plot_boat(position, heading, sail_angle, rudder_angle)
+
+
 
 # for s0, s1 in zip(state[:, 0], state[:, 1]):
 # 	print((s0, s1), (s1, s0))
@@ -708,6 +949,7 @@ fig2, ax2 = plt.subplots()
 
 # ani = animation.FuncAnimation(fig2, animate, frames = 100, interval=200)
 # ani
+#plt.axes().set_aspect('equal', 'datalim')
 plt.show()
 
 	
