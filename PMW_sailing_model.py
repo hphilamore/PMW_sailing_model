@@ -442,13 +442,13 @@ def plot_PMW(boatPosX,
 	ax1.set_ylim([0, 4])
 	#plt.show()
 
-def Transform2D(points, origin, angle, translation):
+def Transform2D(points, origin, angle, translation=0):
 	'''
 	pts = {} Rotates points(nx2) about center cnt(2) by angle ang(1) in radian
 	'''
 
 	R = np.array([[np.cos(angle), np.sin(angle)],
-                  [np.sin(angle), np.cos(angle)]])
+                  [-np.sin(angle), np.cos(angle)]])
 
 	return np.dot(points-origin, R) + origin + translation
 
@@ -457,6 +457,8 @@ def Transform2D(points, origin, angle, translation):
 # 			[-sin(ang),cos(ang)]])
 # 		)+cnt
 
+#def plot_rudder()
+
 def plot_boat(boatPos_pol,
 			  boatAngle,
 			  sailAngle,
@@ -464,19 +466,35 @@ def plot_boat(boatPos_pol,
 	# #fig, ax = plt.subplots()
 	# patches = []
 
+	global_origin = np.array([0,0])
+
 	boatPos_car = cart2pol(boatPos_pol)
 
+	# coords of initial poition of boat centre
 	boat = np.array([[boat_l/2,  boat_w/2],
 					 [-boat_l/2, boat_w/2],
 					 [-boat_l/2, -boat_w/2],
 					 [boat_l/2,  -boat_w/2],
 					 [boat_l/2,  boat_w/2]])
 
-	boat = Transform2D(boat, boatAngle, boatPos_car, boatPos_car)
+	boat = Transform2D(boat, global_origin, boatAngle, boatPos_car)
 
-	plt.plot(boat[:,0], boat[:,1],lw=1,color='k') 
+	
+
+	# 
+	rudder = np.array([[- boat_l/2,            0],
+	                   [- boat_l/2 - rudder_l, 0]])
+
+	rudder = Transform2D(rudder, np.array([- boat_l/2, 0]), rudderAngle)
+	rudder = Transform2D(rudder, global_origin, boatAngle, boatPos_car)
+
+	
 	plt.scatter(boatPos_car[x], boatPos_car[y])
-
+	plt.plot(boat[:,0], boat[:,1],lw=1) 
+	plt.plot(rudder[:,0], rudder[:,1],lw=1) 
+	
+	ax1.set_aspect('equal', 'box') # equal aspect ratio, tight limits
+	#ax1.axis('equal')              # equal aspect ratio
 	# plot(*pts.T,lw=5,color='k') 
 
 	# t_start = ax1.transData
@@ -884,7 +902,7 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 
 # main program
 time = np.arange(0, 20, 1)
-time = np.arange(10)
+time = np.arange(3)
 
 #sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 data = {'sail_angle' : [], 'rudder_angle' : [], 'sail_area' : [], 'position' : [], 'velocity' : [], 'heading' : [], 'angular_vel' : []}
