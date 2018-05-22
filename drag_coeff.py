@@ -43,9 +43,6 @@ c, d, e = np.polyfit(a, Cl, 2)
 Clfit = np.poly1d([c, d, e])(a)
 A=np.array(a)
 CD = 0.05 + CL**2 / (np.pi * 1);
-
-
-
 plt.plot(A, CD, label= f'theoretical')
 
 
