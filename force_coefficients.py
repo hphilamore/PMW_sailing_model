@@ -30,9 +30,10 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness):
 	A0 = 0
 	CD0 = 0
 	ACL1_inf = 9 #degrees
+	CN1max_inf = 2#0.75 #0.445
 	ACD1_inf = ACL1_inf
-	CL1max_inf = cos(deg2rad(ACL1_inf))
-	CD1max_inf = sin(deg2rad(ACL1_inf))
+	CL1max_inf = cos(deg2rad(ACL1_inf)) * CN1max_inf
+	CD1max_inf = sin(deg2rad(ACL1_inf)) * CN1max_inf
 	#print(CL1max_inf)
 	#print(CD1max_inf)
 	S1_inf = CL1max_inf / ACL1_inf # slope of linear segment of pre-stall lift (simplified)
@@ -47,6 +48,18 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness):
 
 	# print(CL1max)
 	# print(CD1max)
+
+
+	#Convert from infinite plate to finite plate
+	# CN1max = 1
+	# ACL1 = 18
+	# ACD1 = ACL1
+	# CD1max = sin(deg2rad(ACL1)) * CN1max
+	# CL1max = cos(deg2rad(ACL1)) * CN1max
+	# S1 = (CL1max+1) / ACL1
+	# AR = 100
+	# t = 4
+	# c =100
 
 
 
@@ -73,9 +86,20 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness):
 	G1 = 2.3 * exp(-(0.65 * (t/c))**0.9)
 	G2 = 0.52 + 0.48 * exp(-(6.5/AR)**1.1)
 
+	# print('F1= ', F1)
+	# print('F2= ', F2)
+	# print('G1= ', G1)
+	# print('G2= ', G2)
+
+
+
+
 	# Post stall max lift and drag
 	CL2max = F1 * F2
 	CD2max = G1 * G2
+
+	# print('CL2max= ', CL2max)
+	# print('CD2max= ', CD2max)
 
 	RCL2 = 1.632 - CL2max
 	N2 = 1 + CL2max / RCL2
@@ -116,10 +140,11 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness):
 	#print('CL= ' , CL)
 	#print('CD= ' , CD)
 
-	return CL1, CD1, CL, CL2, CD2, CD, CL1max_inf, CD1max_inf, CL1max, CD1max
+	#return CL1max, CD1max, CL2max, CD2max
+	return CL, CD, CL1, CD1, CL2, CD2, CL1max_inf, CD1max_inf, CL1max, CD1max, CL2max, CD2max
 
 
-attack_angle = np.linspace(0, pi, 100)
+attack_angle = np.linspace(0, pi, 1000)
 
 
 
@@ -132,7 +157,9 @@ cd2 = []
 cd = []
 
 for a in attack_angle:
-	CL1, CD1, CL, CL2, CD2, CD, CL1max_inf, CD1max_inf, CL1max, CD1max = aero_coeffs(a, AR, c, t)
+	CL, CD, CL1, CD1, CL2, CD2, CL1max_inf, CD1max_inf, CL1max, CD1max, CL2max, CD2max = aero_coeffs(a, AR, c, t)
+	#CL1max, CD1max, CL2max, CD2max = aero_coeffs(a, AR, c, t)
+
 	cl.append(CL)
 	cd.append(CD)
 	cl1.append(CL1)
@@ -148,12 +175,16 @@ print('CD1max_inf= ' , CD1max_inf)
 print('CL1max= ' , CL1max)
 print('CD1max= ' , CD1max)
 
+
+print('CL2max= ' , CL2max)
+print('CD2max= ' , CD2max)
+
 plt.plot(attack_angle, cl, label='lift')
 plt.plot(attack_angle, cd, label='drag')
-# plt.plot(attack_angle, cl1, label='lift1')
-# plt.plot(attack_angle, cd1, label='drag1')
-# plt.plot(attack_angle, cl2, label='lift2')
-# plt.plot(attack_angle, cd2, label='drag2')
+plt.plot(attack_angle, cl1, label='lift1')
+plt.plot(attack_angle, cd1, label='drag1')
+plt.plot(attack_angle, cl2, label='lift2')
+plt.plot(attack_angle, cd2, label='drag2')
 plt.legend()
 plt.xlim((0, 90))
 plt.ylim((0, 2))

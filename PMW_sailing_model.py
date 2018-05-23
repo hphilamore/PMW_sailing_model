@@ -20,78 +20,7 @@ from scipy.integrate import odeint
 
 # Model assumptions
 # All hydronamic side force is translated into lateral motion (no heeling moment)
-# Hull 
-
-x, y = 0, 1
-
-p1 = 0.03;
-p2 = 40;
-p3 = -0.6;
-p4 = 200;
-p5 = 1500;
-p6 = 0.5;
-p7 = 0.5;
-p8 = 2;
-p9 = 120;
-p10 = 400;
-p11 = 0.2;
-
-
-rho_air = 1.225;
-rho_water = 1000;
-
-# boat parameters
-boat_l = 1
-boat_w = 0.5
-rudder_l = 0.2
-sail_l = 0.8
-
-hull_side_area = 0.001
-# points_x = [l/2, l/2, -l/2, -l/2, l/2]
-# points_y = [-w/2, w/2, w/2, -w/2, -w/2]
-# points = np.array([points_x, points_y])
-# points = np.reshape(points, (5, 2))
-
-# sail / rudder area
-A_s = 0.25;
-A_r = 0.05;
-# aspect ratio
-ARs = 5
-ARr = 0.5
-
-c = 0.2 # chord, m
-t = 0 # thickness
-
-# intial conditions
-pos_car = np.array([0, 0])
-pos_pol = cart2pol(pos_car)
-v_car = np.array([0, 0])
-v_pol = cart2pol(v_car)
-theta = 0;
-w = 0;
-tw_pol = np.array([pi , 5])
-aw_pol = appWind(tw_pol, v_pol)
-aw_car = pol2cart(aw_pol)
-
-### SAIL AND RUDDER ANGLE IN BOAT FRAME, ALL OTHERS IN GLOBAL FRAME
-# rudder angle if you are standing on boat
-# % -ve towards port (left)
-# % +ve towards starboard (right)
-# sail angle if you are standing on boat
-# angle of stern-ward end of sail to follow RH coord system
-ra = 0
-sa = pi/2#pi/6
-
-
-#Z_init_state = [pos_car[x], pos_car[y], theta, v_pol[1] , w]
-Z_init_state = [pos_pol, 
-				v_pol,
-				theta,
-				w] 
-
-
-
-#fig1, ax1 = plt.subplots()
+# Hull shape is aerofoil 
 
 
 def cart2pol(coords):
@@ -129,6 +58,91 @@ def four_quad(angle):
 		angle += 2*pi
 
 	return angle 
+
+x, y = 0, 1
+
+p1 = 0.03;
+p2 = 40;
+p3 = -0.6;
+p4 = 200;
+p5 = 1500;
+p6 = 0.5;
+p7 = 0.5;
+p8 = 2;
+p9 = 120;
+p10 = 400;
+p11 = 0.2;
+
+
+rho_air = 1.225;
+rho_water = 1000;
+
+# boat parameters
+boat_l = 1
+boat_w = 0.5
+rudder_l = 0.2
+sail_l = 0.8
+
+hull_side_area = 0.001
+# points_x = [l/2, l/2, -l/2, -l/2, l/2]
+# points_y = [-w/2, w/2, w/2, -w/2, -w/2]
+# points = np.array([points_x, points_y])
+# points = np.reshape(points, (5, 2))
+
+# sail / rudder area
+A_s = 0.25;
+A_r = 0.05;
+A_h = 0.5
+# aspect ratio
+ARs = 5
+ARr = 0.5
+ARh = 2
+
+# Maximum normal coefficient for an infinite foil
+CN1max_inf_s = 0.75 # empirical data from Johannsen = 0.45
+CN1max_inf_r = 0.75
+CN1max_inf_h = 2.0
+
+c_s= sail_l  #0.2 # chord, m
+t_s = 0 # thickness
+c_r= rudder_l# 0.2 # chord, m
+t_r = 0 # thickness
+c_h= boat_l # 0.2 # chord, m
+t_h = boat_l/2 # thickness
+
+# intial conditions
+pos_car = np.array([0, 0])
+pos_pol = cart2pol(pos_car)
+v_car = np.array([0, 0])
+v_pol = cart2pol(v_car)
+theta = 0;
+w = 0;
+tw_pol = np.array([pi , 5])
+# aw_pol = appWind(tw_pol, v_pol)
+# aw_car = pol2cart(aw_pol)
+
+### SAIL AND RUDDER ANGLE IN BOAT FRAME, ALL OTHERS IN GLOBAL FRAME
+# rudder angle if you are standing on boat
+# % -ve towards port (left)
+# % +ve towards starboard (right)
+# sail angle if you are standing on boat
+# angle of stern-ward end of sail to follow RH coord system
+ra = 0
+sa = pi/2#pi/6
+
+
+#Z_init_state = [pos_car[x], pos_car[y], theta, v_pol[1] , w]
+Z_init_state = [pos_pol, 
+				v_pol,
+				theta,
+				w] 
+
+
+
+#fig1, ax1 = plt.subplots()
+
+
+
 
 
 def appWind(tw_pol, v_pol):
@@ -306,7 +320,7 @@ def lift_angle(part_angle, area, apparent_fluid_velocity):
 	# convert angle back to global refernce frame            
 	return la + theta
 
-def aero_coeffs(attack_angle, aspect_ratio, chord, thickness):
+def aero_coeffs(attack_angle, aspect_ratio, chord, thickness, CN1max_infinite):
 	"""
 	Computes the lift abd drag coefficient for a given angle of attack.
 	Considers pre and post stall condition up to 90 degrees
@@ -318,11 +332,15 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness):
 	t = thickness
 
 
-	# (Fage and Johansen)
-	A0 = 0
-	CD0 = 0
+	# (Fage and Johansen): symetrical body
+	A0 = 0    # the attack angle where CL = 0
+	CD0 = 0   # minimum drag coefficient (e.g. CD at A0)
+
+    # Convert input parameters to finite airfoil
+	CN1max_inf = CN1max_infinite #0.445
 	ACL1_inf = 9 #degrees
 	ACD1_inf = ACL1_inf
+	
 	CL1max_inf = cos(deg2rad(ACL1_inf))
 	CD1max_inf = sin(deg2rad(ACL1_inf))
 	#print(CL1max_inf)
@@ -336,6 +354,9 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness):
 	CD1max = CD1max_inf  + 0.28 * CL1max_inf**2 * AR**(-0.9)		# Pre stall max drag
 	S1 = S1_inf / (1 + 18.2 * S1_inf * AR**(-0.9))
 	CL1max = CL1max_inf * (0.67 + 0.33 * exp(-(4.0/AR)**2))	# Pre stall max lift 
+
+	#else:
+		# Input parameters are for finite aitfoil
 
 	# print(CL1max)
 	# print(CD1max)
@@ -433,14 +454,29 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	    # TODO : make aspect ratio and area a function of sail angle
 	    AR = ARs # aspect ratio
 	    A = A_s  # area
+	    CN1max_inf = CN1max_inf_s
+	    c = c_s
+	    t = t_s
 	    
-	else: # part == 'rudder'
+	elif part == 'rudder':
 	    #V_pol = v_pol
 	    # v_fluid_car = v_car
 	    #d = dr
 	    rho = rho_water
-	    A = A_r   # aspect ratio
-	    AR = ARr  # area
+	    AR = ARr  # aspect ratio
+	    A = A_r   # area
+	    CN1max_inf = CN1max_inf_r
+	    c = c_r
+	    t = t_r
+
+	else: # part == 'hull'
+		rho = rho_water
+		AR = ARh  # aspect ratio
+		A = A_h   # area
+		CN1max_inf = CN1max_inf_h
+		c = c_h
+		t = t_h
+
 	
 	# angle of attack    
 	alpha = attack_angle(part_angle, boat_angle, A, part, apparent_fluid_velocity = V_pol)
@@ -453,7 +489,8 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	CL, CD = aero_coeffs(attack_angle=alpha , 
 		  				 aspect_ratio=AR, 
 		  				 chord=c, 
-		  				 thickness=t)
+		  				 thickness=t,
+		  				 CN1max_infinite=CN1max_inf)
 
 	if part=='sail':
 		if force=='lift':
@@ -817,12 +854,12 @@ def dvdt(v_pol, Fs_pol, Fr_pol, theta):
 
 	thrust = Fs_car[x] + Fr_car[x]
 
-	CHs = 1
-	hull_side_resistance = 0.5 * rho_water * hull_side_area * -(v_car[y]**2) * CH
-	CHf = 0.1
-	hull_side_resistance = 0.5 * rho_water * hull_side_area * -(v_car[y]**2) * CH
+	# CHs = 1
+	# hull_side_resistance = 0.5 * rho_water * hull_side_area * -(v_car[y]**2) * CH
+	# CHf = 0.1
+	# hull_side_resistance = 0.5 * rho_water * hull_side_area * -(v_car[y]**2) * CH
 
-	side_force = Fs_car[y] + Fr_car[x] + hull_side_resistance
+	side_force = Fs_car[y] + Fr_car[x] #+ hull_side_resistance
 
 	F_car = np.array([thrust, side_force])
 	# sum forces along each axis that result in linear travel (rudder side force assumend to reult in moment only)
@@ -1008,6 +1045,8 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 	Ds_pol = aero_force(part='sail',   force='drag', apparent_fluid_velocity=aw_pol, part_angle=sa, boat_angle=theta)
 	Lr_pol = aero_force(part='rudder', force='lift', apparent_fluid_velocity=v_pol, part_angle=ra, boat_angle=theta)  
 	Dr_pol = aero_force(part='rudder', force='drag', apparent_fluid_velocity=v_pol, part_angle=ra, boat_angle=theta) 
+	Lh_pol = aero_force(part='hull', force='lift', apparent_fluid_velocity=v_pol, part_angle=theta, boat_angle=theta)  
+	Dh_pol = aero_force(part='hull', force='drag', apparent_fluid_velocity=v_pol, part_angle=theta, boat_angle=theta) 
 
 
 	data["apparent_wind"].append(aw_pol)
@@ -1069,7 +1108,7 @@ data["rudder_angle"].append(ra)
 # data["velocity"].append(Z_init_state[1])
 # data["heading"].append(Z_init_state[2])	
 # data["angular_vel"].append(Z_init_state[3])
-ƒ
+
 for t in time:
 	data["sail_angle"].append(sa)
 	data["rudder_angle"].append(ra)	
