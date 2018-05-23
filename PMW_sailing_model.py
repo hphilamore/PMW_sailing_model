@@ -10,6 +10,18 @@ import matplotlib.cm as cm
 import matplotlib.animation as animation
 from scipy.integrate import odeint
 
+# Model of the sailing performance of a boat
+# Inputs : 
+# Wind angle and force (global frame)
+# Sail angle (local frame)
+# Sail aspect ratio as function of sail angle (to model soft robotic PMW-inspired sail)
+# Rudder angle (local frame)
+
+
+# Model assumptions
+# All hydronamic side force is translated into lateral motion (no heeling moment)
+# Hull 
+
 x, y = 0, 1
 
 p1 = 0.03;
@@ -23,6 +35,59 @@ p8 = 2;
 p9 = 120;
 p10 = 400;
 p11 = 0.2;
+
+
+rho_air = 1.225;
+rho_water = 1000;
+
+# boat parameters
+boat_l = 1
+boat_w = 0.5
+rudder_l = 0.2
+sail_l = 0.8
+
+hull_side_area = 0.001
+# points_x = [l/2, l/2, -l/2, -l/2, l/2]
+# points_y = [-w/2, w/2, w/2, -w/2, -w/2]
+# points = np.array([points_x, points_y])
+# points = np.reshape(points, (5, 2))
+
+# sail / rudder area
+A_s = 0.25;
+A_r = 0.05;
+# aspect ratio
+ARs = 5
+ARr = 0.5
+
+c = 0.2 # chord, m
+t = 0 # thickness
+
+# intial conditions
+pos_car = np.array([0, 0])
+pos_pol = cart2pol(pos_car)
+v_car = np.array([0, 0])
+v_pol = cart2pol(v_car)
+theta = 0;
+w = 0;
+tw_pol = np.array([pi , 5])
+aw_pol = appWind(tw_pol, v_pol)
+aw_car = pol2cart(aw_pol)
+
+### SAIL AND RUDDER ANGLE IN BOAT FRAME, ALL OTHERS IN GLOBAL FRAME
+# rudder angle if you are standing on boat
+# % -ve towards port (left)
+# % +ve towards starboard (right)
+# sail angle if you are standing on boat
+# angle of stern-ward end of sail to follow RH coord system
+ra = 0
+sa = pi/2#pi/6
+
+
+#Z_init_state = [pos_car[x], pos_car[y], theta, v_pol[1] , w]
+Z_init_state = [pos_pol, 
+				v_pol,
+				theta,
+				w] 
 
 
 
@@ -89,55 +154,7 @@ def appWind(tw_pol, v_pol):
 
 	return aw_pol
 
-rho_air = 1.225;
-rho_water = 1000;
 
-# boat parameters
-boat_l = 1
-boat_w = 0.5
-rudder_l = 0.2
-sail_l = 0.8
-# points_x = [l/2, l/2, -l/2, -l/2, l/2]
-# points_y = [-w/2, w/2, w/2, -w/2, -w/2]
-# points = np.array([points_x, points_y])
-# points = np.reshape(points, (5, 2))
-
-# sail / rudder area
-A_s = 0.25;
-A_r = 0.05;
-# aspect ratio
-ARs = 5
-ARr = 0.5
-
-c = 0.2 # chord, m
-t = 0 # thickness
-
-# intial conditions
-pos_car = np.array([0, 0])
-pos_pol = cart2pol(pos_car)
-v_car = np.array([0, 0])
-v_pol = cart2pol(v_car)
-theta = 0;
-w = 0;
-tw_pol = np.array([pi , 5])
-aw_pol = appWind(tw_pol, v_pol)
-aw_car = pol2cart(aw_pol)
-
-### SAIL AND RUDDER ANGLE IN BOAT FRAME, ALL OTHERS IN GLOBAL FRAME
-# rudder angle if you are standing on boat
-# % -ve towards port (left)
-# % +ve towards starboard (right)
-# sail angle if you are standing on boat
-# angle of stern-ward end of sail to follow RH coord system
-ra = 0
-sa = pi- pi/6
-
-
-#Z_init_state = [pos_car[x], pos_car[y], theta, v_pol[1] , w]
-Z_init_state = [pos_pol, 
-				v_pol,
-				theta,
-				w] 
 
 
 
@@ -482,112 +499,112 @@ def sumAeroVectors(lift_pol, drag_pol):
 	return f_pol
 
 
-def plot_PMW(boatPosX, 
-			 boatPosY, 
-			 boatAngle,
-			 sailAngle,
-			 rudderAngle):
-	#fig, ax = plt.subplots()
-	patches = []
-	# boat = Rectangle((starboard_stern_x, 
-	# 				  starboard_stern_y), 
-	#                   boat_l, 
-	#                   boat_w, 
-	#                   angle=theta,
-	#                   color='c', 
-	#                   alpha=0.5)
-	boat = Rectangle((boatPosX - boat_l, 
-					  boatPosY - boat_w), 
-	                  boat_l, 
-	                  boat_w, 
-	                  angle=boatAngle,
-	                  color='c', 
-	                  alpha=0.5)
+# def plot_PMW(boatPosX, 
+# 			 boatPosY, 
+# 			 boatAngle,
+# 			 sailAngle,
+# 			 rudderAngle):
+# 	#fig, ax = plt.subplots()
+# 	patches = []
+# 	# boat = Rectangle((starboard_stern_x, 
+# 	# 				  starboard_stern_y), 
+# 	#                   boat_l, 
+# 	#                   boat_w, 
+# 	#                   angle=theta,
+# 	#                   color='c', 
+# 	#                   alpha=0.5)
+# 	boat = Rectangle((boatPosX - boat_l, 
+# 					  boatPosY - boat_w), 
+# 	                  boat_l, 
+# 	                  boat_w, 
+# 	                  angle=boatAngle,
+# 	                  color='c', 
+# 	                  alpha=0.5)
 
-	rudder_x = [boatPosX - boat_l/2, 
-	            boatPosY - boat_l/2 - rudder_l]
+# 	rudder_x = [boatPosX - boat_l/2, 
+# 	            boatPosY - boat_l/2 - rudder_l]
 
-	rudder_y = [boatPosY, 
-				boatPosY]
+# 	rudder_y = [boatPosY, 
+# 				boatPosY]
 
-	rudder_a = [boatAngle, 
-				boatAngle + rudderAngle]
+# 	rudder_a = [boatAngle, 
+# 				boatAngle + rudderAngle]
 
-	rudder_transx = []
-	rudder_transy = []
+# 	rudder_transx = []
+# 	rudder_transy = []
 
-	for rx, ry, a in zip(rudder_x, 
-		                 rudder_y, 
-		                 rudder_a):	
+# 	for rx, ry, a in zip(rudder_x, 
+# 		                 rudder_y, 
+# 		                 rudder_a):	
 
-		r = np.array([[rx],[ry]])
+# 		r = np.array([[rx],[ry]])
 
-		R = [[cos(a), sin(a)],
-			 [sin(a), cos(a)]]
+# 		R = [[cos(a), sin(a)],
+# 			 [sin(a), cos(a)]]
 
-		rudder_trans = np.dot(R, r)
-		rudder_transx.append(rudder_trans[x])
-		rudder_transy.append(rudder_trans[y])
+# 		rudder_trans = np.dot(R, r)
+# 		rudder_transx.append(rudder_trans[x])
+# 		rudder_transy.append(rudder_trans[y])
 
-	rudder = mlines.Line2D(rudder_transx, rudder_transy, linewidth=2, color='b', alpha=0.5)
+# 	rudder = mlines.Line2D(rudder_transx, rudder_transy, linewidth=2, color='b', alpha=0.5)
 
 
-	sail_x = [boatPosX + sail_l/2, 
-	          boatPosY - sail_l/2]
+# 	sail_x = [boatPosX + sail_l/2, 
+# 	          boatPosY - sail_l/2]
 
-	sail_y = [boatPosX, 
-			  boatPosY]
+# 	sail_y = [boatPosX, 
+# 			  boatPosY]
 
-	sail_angle = [boatAngle + sailAngle, 
-				  boatAngle + sailAngle]
+# 	sail_angle = [boatAngle + sailAngle, 
+# 				  boatAngle + sailAngle]
 
-	sail_transx = []
-	sail_transy = []
+# 	sail_transx = []
+# 	sail_transy = []
 
-	for sx, sy, a in zip(sail_x, 
-		                 sail_y, 
-		                 sail_angle):
-		r = np.array([[sx],[sy]])
+# 	for sx, sy, a in zip(sail_x, 
+# 		                 sail_y, 
+# 		                 sail_angle):
+# 		r = np.array([[sx],[sy]])
 
-		R = [[cos(a), sin(a)],
-			 [sin(a), cos(a)]]
+# 		R = [[cos(a), sin(a)],
+# 			 [sin(a), cos(a)]]
 
-		sail_trans = np.dot(R, r)
-		sail_transx.append(sail_trans[x])
-		sail_transy.append(sail_trans[y])
+# 		sail_trans = np.dot(R, r)
+# 		sail_transx.append(sail_trans[x])
+# 		sail_transy.append(sail_trans[y])
 	
 
-	sail = mlines.Line2D(sail_transx, sail_transy, linewidth=2, color='k', alpha=0.5)
+# 	sail = mlines.Line2D(sail_transx, sail_transy, linewidth=2, color='k', alpha=0.5)
 
 
-	mast = Circle((boatPosX, boatPosY), 0.01, color='k')
+# 	mast = Circle((boatPosX, boatPosY), 0.01, color='k')
 
 
-	# fig1 = plt.figure()
-	# ax1 = fig1.add_subplot(111, aspect='equal')
+# 	# fig1 = plt.figure()
+# 	# ax1 = fig1.add_subplot(111, aspect='equal')
 
-	# fig1, ax1 = plt.subplots()
-
-
-	ax1.add_patch(boat)
-	ax1.add_patch(mast)
-	ax1.add_line(rudder)
-	ax1.add_line(sail)
-
-	origin = [0], [0] # origin point
-
-	V = np.array([[1,1],[-2,2],[4,-7]])
-	# origin_x, origin_y, length_x, length_y
-	V = np.array([[1 , 1, 0, 0],
-		          [-2, 2, 0, 4],
-		          [4, -7, 5, 5]])
+# 	# fig1, ax1 = plt.subplots()
 
 
+# 	ax1.add_patch(boat)
+# 	ax1.add_patch(mast)
+# 	ax1.add_line(rudder)
+# 	ax1.add_line(sail)
 
-	#ax1.autoscale(enable=True, axis='both', tight=None)
-	# ax1.set_xlim([-6, 20])
-	# ax1.set_ylim([-6, 20])
-	#plt.show()
+# 	origin = [0], [0] # origin point
+
+# 	V = np.array([[1,1],[-2,2],[4,-7]])
+# 	# origin_x, origin_y, length_x, length_y
+# 	V = np.array([[1 , 1, 0, 0],
+# 		          [-2, 2, 0, 4],
+# 		          [4, -7, 5, 5]])
+
+
+
+# 	#ax1.autoscale(enable=True, axis='both', tight=None)
+# 	# ax1.set_xlim([-6, 20])
+# 	# ax1.set_ylim([-6, 20])
+# 	#plt.show()
 
 def Transform2D(points, origin, angle, translation=0):
 	'''
@@ -737,7 +754,7 @@ def draw_vectors(sail, rudder,
                    # [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
                    [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
                    # [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw']
-                   #[pos_car[x], pos_car[y], Fs_car[x],  Fs_car[y], 'Fs']
+                   [pos_car[x], pos_car[y], Fs_car[x],  Fs_car[y], 'Fs']
                    ]
 
 	
@@ -772,7 +789,7 @@ def draw_vectors(sail, rudder,
 	# ax1.set_xlim([0, 4])
 	# ax1.set_ylim([0, 4])
 
-def dvdt(Fs_pol, Fr_pol, theta):
+def dvdt(v_pol, Fs_pol, Fr_pol, theta):
 	"""
 	% The acceleration of the PMW in the direction of the heading (theta). 
 	% Component of wind force on sail acting parallel to heading direction  
@@ -787,37 +804,48 @@ def dvdt(Fs_pol, Fr_pol, theta):
 	"""
 
 	# forces acting forwards and sideways in the boat frame of ref
-	Fs_car, Fr_car = force_wrt_boat(Fs_pol, Fr_pol, theta)
+	#Fs_car, Fr_car = force_wrt_boat(Fs_pol, Fr_pol, theta)
 
+	# Sail and drag forces in boat frame of ref
+	Fs_pol[0] -= theta 
+	Fr_pol[0] -= theta 
 
+	# convert to cartesian coords
+	Fs_car = pol2cart(Fs_pol)
+	Fr_car = pol2cart(Fr_pol)
+	v_car = pol2cart(v_pol)
 
-	x = Fs_car[0] + Fr_car[0]
-	y = f_leering(Fs_car[1]) 
+	thrust = Fs_car[x] + Fr_car[x]
 
-	F_car = np.array([Fs_car[0] + Fr_car[0], 
-		              f_leering(Fs_car[1]) ])
+	CHs = 1
+	hull_side_resistance = 0.5 * rho_water * hull_side_area * -(v_car[y]**2) * CH
+	CHf = 0.1
+	hull_side_resistance = 0.5 * rho_water * hull_side_area * -(v_car[y]**2) * CH
+
+	side_force = Fs_car[y] + Fr_car[x] + hull_side_resistance
+
+	F_car = np.array([thrust, side_force])
 	# sum forces along each axis that result in linear travel (rudder side force assumend to reult in moment only)
 	# Fcar = np.array(Fs_car[0] + Fr_car[0], 
 	# 	             f_leering(Fs_car[1])) 
 
-
 	# convert to polar coordinates in global frame
 	Fpol = cart2pol(F_car)
+	Fpol[0] += theta
 	
 	# convert to acceleration
 	mass = 1
-	acceleration = np.array([Fpol[0] + theta,
+	
+	acceleration = np.array([Fpol[0], 
 		                     Fpol[1]/mass])
-
-
 	return acceleration
 
 
-def f_leering(side_force):
-	"""
-	Function relating side force on boat to side force resulting in perpendicular acceleration of boat 
-	"""
-	return (0.1 * side_force)
+# def f_leering(side_force):
+# 	"""
+# 	Function relating side force on boat to side force resulting in perpendicular acceleration of boat 
+# 	"""
+# 	return (0.1 * side_force)
 
 
 # def dxdt():
@@ -843,30 +871,27 @@ def dpdt(v_pol, Fs_pol, Fr_pol, theta):
 
 	v_car = pol2cart(v_pol)
 
-
-
-
-	dvdt_car = pol2cart(dvdt(Fs_pol, Fr_pol, theta))
+	dvdt_car = pol2cart(dvdt(v_pol, Fs_pol, Fr_pol, theta))
 
 	return cart2pol(v_car + dvdt_car) 
 		            
 
 
-def force_wrt_boat(Fs_pol, Fr_pol, theta):
+# def force_wrt_boat(Fs_pol, Fr_pol, theta):
 
-	"""
-	Resolves the sail and rudder force perpendiular and parallel to the boat (bow to stern) axis"
-	"""
+# 	"""
+# 	Resolves the sail and rudder force perpendiular and parallel to the boat (bow to stern) axis"
+# 	"""
 
-	# convert to boat frame of ref
-	Fs_pol[0] -= theta 
-	Fr_pol[0] -= theta 
+# 	# convert to boat frame of ref
+# 	Fs_pol[0] -= theta 
+# 	Fr_pol[0] -= theta 
 
-	# convert to cartesian coords
-	Fs_car = pol2cart(Fs_pol)
-	Fr_car = pol2cart(Fr_pol)
+# 	# convert to cartesian coords
+# 	Fs_car = pol2cart(Fs_pol)
+# 	Fr_car = pol2cart(Fr_pol)
 
-	return Fs_car, Fr_car
+# 	return Fs_car, Fr_car
 
 	# # component of sail force in direction of boat heading
 	# Fs_pol[1] = Fs_pol[1] * np.cos(Fs_pol[0])
@@ -892,7 +917,15 @@ def dwdt(w, Fs_pol, Fr_pol, theta, rudder_a):
 	"""
 
 	# force on boat, cartesian coords
-	Fs_car, Fr_car = force_wrt_boat(Fs_pol, Fr_pol, theta)
+
+	# Sail and drag forces in boat frame of ref
+	Fs_pol[0] -= theta 
+	Fr_pol[0] -= theta 
+
+	# convert to cartesian coords
+	Fs_car = pol2cart(Fs_pol)
+	Fr_car = pol2cart(Fr_pol)
+	#Fs_car, Fr_car = force_wrt_boat(Fs_pol, Fr_pol, theta)
 
 	return 0
 
@@ -1007,7 +1040,7 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 	# print("Fr_pol", Fr_pol)
 
 	dZdt = [dpdt(v_pol, Fs_pol, Fr_pol, theta), 
-	        dvdt(Fs_pol, Fr_pol, theta), 
+	        dvdt(v_pol, Fs_pol, Fr_pol, theta), 
 	        dthdt(w, Fs_pol, Fr_pol, theta, ra),  
 	        dwdt(w, Fs_pol, Fr_pol, theta, ra),
 			]
@@ -1019,7 +1052,7 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 
 # main program
 time = np.arange(0, 20, 1)
-time = np.arange(1)
+time = np.arange(2)
 
 #sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 data = {'apparent_wind' : [], 'sail_angle' : [], 'rudder_angle' : [], 'sail_area' : [], 
@@ -1036,7 +1069,7 @@ data["rudder_angle"].append(ra)
 # data["velocity"].append(Z_init_state[1])
 # data["heading"].append(Z_init_state[2])	
 # data["angular_vel"].append(Z_init_state[3])
-
+ƒ
 for t in time:
 	data["sail_angle"].append(sa)
 	data["rudder_angle"].append(ra)	
