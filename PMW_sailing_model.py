@@ -1130,13 +1130,13 @@ for t in time:
 	# 	if type(z) == np.array:
 
 	#for i in range(len(Z_init_state)):
-	for i, z in enumerate(Z_init_state):
+	for i, (z, s) in enumerate(zip(Z_init_state, state)):
 		# if array (coords), convert to cartesian, add, convert back to polar
-		if type(Z_init_state[i]) == np.array:
-			Z_init_state[i] = cart2pol(pol2cart(Z_init_state[i])+pol2cart(state[i]))
+		if type(z) == np.array:
+			Z_init_state[i] = cart2pol(pol2cart(z)+pol2cart(s))
 		# if scaler (angle), simply add
 		else:
-			Z_init_state[i] = Z_init_state[i] + state[i]
+			Z_init_state[i] = z + s
 
 
 
