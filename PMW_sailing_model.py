@@ -125,8 +125,7 @@ v_car = np.array([0, 0])
 v_pol = cart2pol(v_car)
 theta = 0;
 w = 0;
-tw_pol = np.array([pi , 5])
-
+tw_pol = np.array([0 , 5])
 # aw_pol = appWind(tw_pol, v_pol)
 # aw_car = pol2cart(aw_pol)
 
@@ -499,8 +498,8 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	    CD0 = 0
 	    c = c_r
 	    t = t_r
-	    lift_scaler = 1
-	    drag_scaler = 0.02
+	    lift_scaler = 0.1
+	    drag_scaler = 4
 	    overall_scaler = 0.1
 
 	else: # part == 'hull'
@@ -548,7 +547,8 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	plt.legend()
 	plt.title(part)
 	plt.xlim((0, 90))
-	plt.ylim((0, 2))
+	plt.ylim(ymin=0)
+	#plt.ylim((0, 2))
 	# plt.xlim((0, 90))
 	#plt.ylim((0, 2))
 	#plt.show()
@@ -776,15 +776,15 @@ def draw_vectors(sail, rudder,
 
 
 	vectors = [
-                   [pos_car[x],          pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
-                   [pos_car[x],          pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
+                   #[pos_car[x],          pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
+                   #[pos_car[x],          pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
                    [pos_car[x]-boat_l/2, pos_car[y], Lr_car[x], Lr_car[y], 'Lrud'],
                    [pos_car[x]-boat_l/2, pos_car[y], Dr_car[x], Dr_car[y], 'Drud'],
-                   # [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
-                   [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
+                   #[pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
+                   #[pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
                    # [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw']
-                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
-                   [pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fs_car[y], 'Fr']
+                   # [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   [pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr']
                    ]
 
 
@@ -793,7 +793,7 @@ def draw_vectors(sail, rudder,
 	#for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
 	for n, (V, c) in enumerate(zip(vectors, colors), 1):
 		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		quiver_scale = 100
+		quiver_scale = 5
 		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
 		#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 		quiver_key_scale = quiver_scale/10#100
