@@ -97,6 +97,7 @@ sail_l = 0.8
 A_s = 0.64
 A_r = 0.1
 A_h = 0.5
+
 # aspect ratio
 ARs = 4
 ARr = 2
@@ -125,7 +126,8 @@ v_car = np.array([0, 0])
 v_pol = cart2pol(v_car)
 theta = 0;
 w = 0;
-tw_pol = np.array([0 , 5])
+# tw_pol = np.array([pi*2/3 , 5])
+tw_pol = np.array([pi+deg2rad(9) , 5])
 # aw_pol = appWind(tw_pol, v_pol)
 # aw_car = pol2cart(aw_pol)
 
@@ -136,7 +138,7 @@ tw_pol = np.array([0 , 5])
 # sail angle if you are standing on boat
 # angle of stern-ward end of sail to follow RH coord system
 ra = 0
-sa = pi/2#pi/6
+sa = 0#pi/6
 
 
 #Z_init_state = [pos_car[x], pos_car[y], theta, v_pol[1] , w]
@@ -483,8 +485,8 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	    CD0 = 0
 	    c = c_s
 	    t = t_s
-	    lift_scaler = 1
-	    drag_scaler = 1
+	    lift_scaler = 2
+	    drag_scaler = 0.1
 	    overall_scaler = 1
 	    
 	elif part == 'rudder':
@@ -776,15 +778,15 @@ def draw_vectors(sail, rudder,
 
 
 	vectors = [
-                   #[pos_car[x],          pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
-                   #[pos_car[x],          pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
-                   [pos_car[x]-boat_l/2, pos_car[y], Lr_car[x], Lr_car[y], 'Lrud'],
-                   [pos_car[x]-boat_l/2, pos_car[y], Dr_car[x], Dr_car[y], 'Drud'],
+                   [pos_car[x],          pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
+                   [pos_car[x],          pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
+                   #[pos_car[x]-boat_l/2, pos_car[y], Lr_car[x], Lr_car[y], 'Lrud'],
+                   #[pos_car[x]-boat_l/2, pos_car[y], Dr_car[x], Dr_car[y], 'Drud'],
                    #[pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
-                   #[pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
+                   [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
                    # [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw']
-                   # [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
-                   [pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr']
+                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   #[pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr']
                    ]
 
 
@@ -793,7 +795,7 @@ def draw_vectors(sail, rudder,
 	#for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
 	for n, (V, c) in enumerate(zip(vectors, colors), 1):
 		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		quiver_scale = 5
+		quiver_scale = 25
 		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
 		#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 		quiver_key_scale = quiver_scale/10#100
@@ -856,19 +858,25 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta):
 	side_force = Fs_car[y] + Fr_car[y] #+ Fh_car[y] #+ hull_side_resistance
 
 	F_car = np.array([thrust, side_force])
-	# sum forces along each axis that result in linear travel (rudder side force assumend to reult in moment only)
-	# Fcar = np.array(Fs_car[0] + Fr_car[0], 
-	# 	             f_leering(Fs_car[1])) 
-
 	# convert to polar coordinates in global frame
 	Fpol = cart2pol(F_car)
 	Fpol[0] += theta
+
+	# ignoring side force on boat
+	F_car_thrust = np.array([thrust, 0])
+	# convert to polar coordinates in global frame
+	Fpol_thrust = cart2pol(F_car_thrust)
+	Fpol_thrust[0] += theta
+
+	
 	
 	# convert to acceleration
 	mass = 10
 	
 	acceleration = np.array([Fpol[0], 
 		                     Fpol[1]/mass])
+	acceleration = np.array([Fpol_thrust[0], 
+	                         Fpol_thrust[1]/mass])
 	return acceleration
 
 
