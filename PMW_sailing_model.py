@@ -502,16 +502,23 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 		  				 CDmin_infinite=CD0
 		  				 )
 
-	C = CL if force == 'lift' else CD
+	
+	if force == 'lift':
+		C = CL
+		angle = four_quad(lift_angle(part_angle, area=A, apparent_fluid_velocity = V_pol))
+	else:
+		C = CD
+		angle = four_quad(V_pol[0])
 
 	force = 0.5 * rho * A * V_pol[1]**2 * C
 
-	angle = lift_angle(part_angle, area=A, apparent_fluid_velocity = V_pol) if (force =='lift') else V_pol[0]
+	#angle = four_quad(lift_angle(part_angle, area=A, apparent_fluid_velocity = V_pol) if (force =='lift') else V_pol[0])
 
-	if part == 'hull':
-		angle += pi 
+	# if part == 'hull':
+	# 	pass
+		#angle += pi 
 
-	angle = four_quad(angle)
+	#angle = four_quad(angle)
 
 
 
@@ -838,8 +845,8 @@ def dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta):
 	print('dvdt_car', dvdt_car)
 	print('dpdt_car', (v_car + dvdt_car))
 	print()
-	print()
-	print()
+	# print()
+	# print()
 
 	return cart2pol(v_car + dvdt_car) 
 		            
@@ -974,10 +981,10 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 	# calculate lift and drag force
 	Ls_pol = aero_force(part='sail',   force='lift', apparent_fluid_velocity=aw_pol, part_angle=sa, boat_angle=theta)
 	Ds_pol = aero_force(part='sail',   force='drag', apparent_fluid_velocity=aw_pol, part_angle=sa, boat_angle=theta)
-	Lr_pol = aero_force(part='rudder', force='lift', apparent_fluid_velocity=v_pol, part_angle=ra, boat_angle=theta)  
-	Dr_pol = aero_force(part='rudder', force='drag', apparent_fluid_velocity=v_pol, part_angle=ra, boat_angle=theta) 
-	Lh_pol = aero_force(part='hull', force='lift', apparent_fluid_velocity=v_pol, part_angle=theta, boat_angle=theta)  
-	Dh_pol = aero_force(part='hull', force='drag', apparent_fluid_velocity=v_pol, part_angle=theta, boat_angle=theta) 
+	Lr_pol = aero_force(part='rudder', force='lift', apparent_fluid_velocity=(-v_pol), part_angle=ra, boat_angle=theta)  
+	Dr_pol = aero_force(part='rudder', force='drag', apparent_fluid_velocity=(-v_pol), part_angle=ra, boat_angle=theta) 
+	Lh_pol = aero_force(part='hull',   force='lift', apparent_fluid_velocity=(-v_pol), part_angle=theta, boat_angle=theta)  
+	Dh_pol = aero_force(part='hull',   force='drag', apparent_fluid_velocity=(-v_pol), part_angle=theta, boat_angle=theta) 
 
 
 	data["apparent_wind"].append(aw_pol)
@@ -1063,6 +1070,14 @@ data["rudder_angle"].append(ra)
 # data["angular_vel"].append(Z_init_state[3])
 
 for t in time:
+
+	print('Z_init_start')
+	for i in range(len(Z_init_state[:2])):
+		#cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
+		#Z_init_state[i] = Z_init_state[i] + state[i]
+		print(pol2cart(Z_init_state[i]))
+	print()
+
 	data["sail_angle"].append(sa)
 	data["rudder_angle"].append(ra)	
 	data["position"].append(Z_init_state[0])
@@ -1070,25 +1085,76 @@ for t in time:
 	data["heading"].append(Z_init_state[2])	
 	data["angular_vel"].append(Z_init_state[3])
 
-	print('position', data["position"][t])
-	print('velocity', data["velocity"][t])
+
+	print('Lists') 
+	print('position_cart_array_start', data["position"])
+	print('velocity_cart_array_start', data["velocity"])
+	print('position_cart_start', pol2cart(data["position"][t]))
+	print('velocity_cart_start', pol2cart(data["velocity"][t]))
 	print()
 
 
 	state = param_solve(Z_init_state)
 
-	# for i in range(len(Z_init_state)):
-	# 	cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
+	# print('Z_init')
+	# for i in range(len(Z_init_state[:2])):
+	# 	#cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
+	# 	#Z_init_state[i] = Z_init_state[i] + state[i]
+	# 	print(pol2cart(Z_init_state[i]))
+	# print()
+
+	# print('d_Z')
+	# for i in range(len(Z_init_state[:2])):
+	# 	#cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
+	# 	#Z_init_state[i] = Z_init_state[i] + state[i]
+	# 	print(pol2cart(state[i]))
+	# print()
+
+	# # for i in range(len(Z_init_state)):
+	# # 	cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
+	# # 	#Z_init_state[i] = Z_init_state[i] + state[i]
+	# # 	Z_init_state[i] = cart2pol(pol2cart(Z_init_state[i])+pol2cart(state[i]))
+	# print('Z_init = Z_init + d_Z')
+	# for i in range(len(Z_init_state[:2])):
+	# 	#cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
 	# 	#Z_init_state[i] = Z_init_state[i] + state[i]
 	# 	Z_init_state[i] = cart2pol(pol2cart(Z_init_state[i])+pol2cart(state[i]))
-	for i in range(len(Z_init_state[:2])):
-		#cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
-		#Z_init_state[i] = Z_init_state[i] + state[i]
-		Z_init_state[i] = cart2pol(pol2cart(Z_init_state[i])+pol2cart(state[i]))
-	for i in range(len(Z_init_state[2:])):
-		#cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
-		#Z_init_state[i] = Z_init_state[i] + state[i]
-		Z_init_state[i] = Z_init_state[i] + state[i]
+
+	# for i in range(len(Z_init_state[:2])):
+	# 	#cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
+	# 	#Z_init_state[i] = Z_init_state[i] + state[i]
+	# 	print(pol2cart(state[i]))
+	# print()
+
+	# for z, s in zip(Z_init_state, state):
+	# 	if type(z) == np.array:
+
+	#for i in range(len(Z_init_state)):
+	for i, z in enumerate(Z_init_state):
+		# if array (coords), convert to cartesian, add, convert back to polar
+		if type(Z_init_state[i]) == np.array:
+			Z_init_state[i] = cart2pol(pol2cart(Z_init_state[i])+pol2cart(state[i]))
+		# if scaler (angle), simply add
+		else:
+			Z_init_state[i] = Z_init_state[i] + state[i]
+
+
+
+
+
+	#print('Z_init') 
+	# for i in range(len(Z_init_state[2:])):
+	# 	#cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
+	# 	#Z_init_state[i] = Z_init_state[i] + state[i]
+	# 	Z_init_state[i] = Z_init_state[i] + state[i]
+
+	print('Lists') 
+	print('position_cart_array_end', data["position"])
+	print('velocity_cart_array_end', data["velocity"])
+	print('position_cart_end', pol2cart(data["position"][t]))
+	print('velocity_cart_end', pol2cart(data["velocity"][t]))
+	print()
+	print()
 ### solve using ode solver
 #state = odeint(param_solve, Z_init_state, time)
 
@@ -1102,7 +1168,7 @@ fig1, ax1 = plt.subplots()
 
 
 
-for i in range(len(time)):
+for i in time:
 
 
 	plot_boat(data["position"][i], 
