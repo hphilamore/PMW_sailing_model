@@ -5,7 +5,11 @@ import matplotlib.pyplot as plt
 
 
 
-
+# Input parameters
+a = 0  # angle of attack, degrees
+AR = 5 # Aspect ratio
+c = 0.2 # chord, m
+t = 0 # thickness
 
 
 
@@ -26,10 +30,10 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness, CN1max_infinite, C
 	A0 = 0
 	CD0 = CDmin_infinite #0
 	ACL1_inf = 9 #degrees
-	CN1max_inf = CN1max_infinite# 0.75#0.75 #0.445
 	ACD1_inf = ACL1_inf
-	CL1max_inf = cos(deg2rad(ACL1_inf)) #* CN1max_inf
-	CD1max_inf = sin(deg2rad(ACL1_inf)) #* CN1max_inf
+	CN1max_inf = CN1max_infinite
+	CL1max_inf = cos(deg2rad(ACL1_inf)) * CN1max_infinite
+	CD1max_inf = sin(deg2rad(ACL1_inf)) * CN1max_infinite
 	#print(CL1max_inf)
 	#print(CD1max_inf)
 	S1_inf = CL1max_inf / ACL1_inf # slope of linear segment of pre-stall lift (simplified)
@@ -44,18 +48,6 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness, CN1max_infinite, C
 
 	# print(CL1max)
 	# print(CD1max)
-
-
-	#Convert from infinite plate to finite plate
-	# CN1max = 1
-	# ACL1 = 18
-	# ACD1 = ACL1
-	# CD1max = sin(deg2rad(ACL1)) * CN1max
-	# CL1max = cos(deg2rad(ACL1)) * CN1max
-	# S1 = (CL1max+1) / ACL1
-	# AR = 100
-	# t = 4
-	# c =100
 
 
 
@@ -82,20 +74,9 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness, CN1max_infinite, C
 	G1 = 2.3 * exp(-(0.65 * (t/c))**0.9)
 	G2 = 0.52 + 0.48 * exp(-(6.5/AR)**1.1)
 
-	# print('F1= ', F1)
-	# print('F2= ', F2)
-	# print('G1= ', G1)
-	# print('G2= ', G2)
-
-
-
-
 	# Post stall max lift and drag
 	CL2max = F1 * F2
 	CD2max = G1 * G2
-
-	# print('CL2max= ', CL2max)
-	# print('CD2max= ', CD2max)
 
 	RCL2 = 1.632 - CL2max
 	N2 = 1 + CL2max / RCL2
@@ -136,30 +117,34 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness, CN1max_infinite, C
 	#print('CL= ' , CL)
 	#print('CD= ' , CD)
 
-	#return CL1max, CD1max, CL2max, CD2max
-	return CL, CD, CL1, CD1, CL2, CD2
+	return CL1, CD1, CL, CL2, CD2, CD
 
-attack_angle = np.linspace(0, pi, 1000)
+attack_angle = np.linspace(0, pi, 100)
 
-# cl1 = []
-# cl2 = []
-# cl = []
+# aero_coeffs_vec = np.vectorize(aero_coeffs)
 
-# cd1 = []
-# cd2 = []
-# cd = []
+# # #(attack_angle, aspect_ratio, chord, thickness, CN1max_infinite, CDmin_infinite)
 
-# for a in attack_angle:
-# 	CL, CD, CL1, CD1, CL2, CD2, CL1max_inf, CD1max_inf, CL1max, CD1max, CL2max, CD2max = aero_coeffs(a, AR, c, t)
-# 	#CL1max, CD1max, CL2max, CD2max = aero_coeffs(a, AR, c, t)
+# CL1, CD1, CL, CL2, CD2, CD, CL1max_inf, CD1max_inf, CL1max, CD1max = aero_coeffs_vec(
+# 	attack_angle, AR, c, t, 1, 0)
+# cl = CL
+# cd = CD
+# cl1 = CL1
+# cd1 = CD1
+# cl2 = CL2
+# cd2 = CD2
 
-# 	cl.append(CL)
-# 	cd.append(CD)
-# 	cl1.append(CL1)
-# 	cd1.append(CD1)
-# 	cl2.append(CL2)
-# 	cd2.append(CD2)
 
+
+cl1 = []
+cl2 = []
+cl = []
+
+cd1 = []
+cd2 = []
+cd = []
+
+# boat parameters
 # boat parameters
 boat_l = 1
 boat_w = 0.5
@@ -167,19 +152,25 @@ rudder_l = 0.4
 sail_l = 0.8
 
 
+# points_x = [l/2, l/2, -l/2, -l/2, l/2]
+# points_y = [-w/2, w/2, w/2, -w/2, -w/2]
+# points = np.array([points_x, points_y])
+# points = np.reshape(points, (5, 2))
+
 # sail / rudder area
 A_s = 0.64
 A_r = 0.1
 A_h = 0.5
 # aspect ratio
-ARs = 1
-ARr = 1.6
+ARs = 4
+ARr = 2
 ARh = 2
 
 # Maximum normal coefficient for an infinite foil
-CN1max_inf_s = 0.75 # empirical data from Johannsen = 0.45
-CN1max_inf_r = 0.75
-CN1max_inf_h = 0.1
+CN1max_inf_s = 1 # empirical data from Johannsen = 0.45
+CN1max_inf_r = 1.5
+CN1max_inf_h = 1
+
 
 # hull minimum drag coefficient
 CD0_hull = 0.1
@@ -191,39 +182,53 @@ t_r = 0 # thickness
 c_h= boat_l # 0.2 # chord, m
 t_h = boat_l/2 # thickness
 
-# Input parameters
+
+# # Input parameters
 # a = 0  # angle of attack, degrees
 # AR = 5 # Aspect ratio
 # c = 0.2 # chord, m
 # t = 0 # thickness
+# CN1max_inf = 1
+# CDmin_inf = 0
 
-#a = 0  # angle of attack, degrees
-AR = ARs#5 # Aspect ratio
-c = c_s#0.2 # chord, m
-t = t_s #0 # thickness
-CN1max_inf = CN1max_inf_s
+# # Input parameters
+# a = 0  # angle of attack, degrees
+# AR = 4 # Aspect ratio
+# c = 0.2 # chord, m
+# t = 0 # thickness
+# CN1max_inf = 1
+# CDmin_inf = 0
+
+
+# # #a = 0  # angle of attack, degrees
+# # AR = ARs#5 # Aspect ratio
+# # c = c_s#0.2 # chord, m
+# # t = t_s #0 # thickness
+# # CN1max_inf = CN1max_inf_s
+# # CDmin_inf = 0
+
+
+AR = ARr#5 # Aspect ratio
+c = c_r#0.2 # chord, m
+t = t_r #0 # thickness
+CN1max_inf = CN1max_inf_r
 CDmin_inf = 0
 
-AR = 5 # Aspect ratio
-c = 0.2 # chord, m
-t = 0 # thickness
-CN1max_inf = 0.75#CN1max_inf_s
-CDmin_inf = 0
+# AR = ARh#5 # Aspect ratio
+# c = c_h#0.2 # chord, m
+# t = t_h #0 # thickness
+# CN1max_inf = CN1max_inf_h
+# CDmin_inf = CD0_hull
 
-aero_coeffs_vec = np.vectorize(aero_coeffs)
 
-#(attack_angle, aspect_ratio, chord, thickness, CN1max_infinite, CDmin_infinite)
-
-cl1 = []
-cl2 = []
-cl = []
-
-cd1 = []
-cd2 = []
-cd = []
+# AR = 2 # Aspect ratio
+# c = 0.2 # chord, m
+# t = 0 # thickness
+# CN1max_inf = 1#0.75#CN1max_inf_s
+# CDmin_inf = 0
 
 for a in attack_angle:
-	CL1, CD1, CL, CL2, CD2, CD = aero_coeffs(a, AR, c, t, 1, 0)
+	CL1, CD1, CL, CL2, CD2, CD = aero_coeffs(a, AR, c, t, CN1max_inf, CDmin_inf)
 	cl.append(CL)
 	cd.append(CD)
 	cl1.append(CL1)
@@ -239,21 +244,17 @@ attack_angle = rad2deg(attack_angle)
 # print('CL1max= ' , CL1max)
 # print('CD1max= ' , CD1max)
 
-
-# print('CL2max= ' , CL2max)
-# print('CD2max= ' , CD2max)
-
-
-plt.plot(attack_angle, CL1, label='lift1')
-plt.plot(attack_angle, CD1, label='drag1')
-plt.plot(attack_angle, CL2, label='lift2')
-plt.plot(attack_angle, CD2, label='drag2')
-
+plt.plot(attack_angle, cl, label='lift')
+plt.plot(attack_angle, cd, label='drag')
+plt.plot(attack_angle, cl1, label='lift1')
+plt.plot(attack_angle, cd1, label='drag1')
+plt.plot(attack_angle, cl2, label='lift2')
+plt.plot(attack_angle, cd2, label='drag2')
 plt.legend()
+
 plt.xlim((0, 90))
 plt.ylim((0, 2))
 plt.show()
-
 
 
 
