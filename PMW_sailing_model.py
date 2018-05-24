@@ -125,7 +125,7 @@ v_car = np.array([0, 0])
 v_pol = cart2pol(v_car)
 theta = 0;
 w = 0;
-tw_pol = np.array([pi , 10])
+tw_pol = np.array([pi , 5])
 # aw_pol = appWind(tw_pol, v_pol)
 # aw_car = pol2cart(aw_pol)
 
@@ -331,7 +331,8 @@ def lift_angle(part_angle, area, apparent_fluid_velocity):
 	return la 
 
 def aero_coeffs(attack_angle, aspect_ratio, chord, thickness, 
-	            CN1max_infinite, CDmin_infinite, drag_scale_factor):
+	            CN1max_infinite, CDmin_infinite, 
+	            lift_scale_factor, drag_scale_factor, overall_scale_factor):
 	"""
 	Computes the lift abd drag coefficient for a given angle of attack.
 	Considers pre and post stall condition up to 90 degrees
@@ -446,7 +447,8 @@ def aero_coeffs(attack_angle, aspect_ratio, chord, thickness,
 
 	# apply drag scale factor so that CD > CL for rudder and hull
 	#CD *= drag_scale_factor
-	CL /= drag_scale_factor
+	CL *= (lift_scale_factor * overall_scale_factor)
+	CD *= (drag_scale_factor * overall_scale_factor)
 
 	#print('CL= ' , CL)
 	#print('CD= ' , CD)
@@ -481,7 +483,9 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	    CD0 = 0
 	    c = c_s
 	    t = t_s
+	    lift_scaler = 1
 	    drag_scaler = 1
+	    overall_scaler = 1
 	    
 	elif part == 'rudder':
 	    #V_pol = v_pol
@@ -494,7 +498,9 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	    CD0 = 0
 	    c = c_r
 	    t = t_r
-	    drag_scaler = 4
+	    lift_scaler = 1
+	    drag_scaler = 0.02
+	    overall_scaler = 0.1
 
 	else: # part == 'hull'
 		rho = rho_water
@@ -504,7 +510,9 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 		CD0 = CD0_hull
 		c = c_h
 		t = t_h
+		lift_scaler = 1
 		drag_scaler = 4
+		overall_scaler = 1
 
 	
 	# angle of attack    
@@ -525,7 +533,9 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 			  				 thickness=t,
 			  				 CN1max_infinite=CN1max_inf,
 			  				 CDmin_infinite=CD0,
-			  				 drag_scale_factor = drag_scaler
+			  				 lift_scale_factor=lift_scaler, 
+			  				 drag_scale_factor=drag_scaler, 
+			  				 overall_scale_factor = overall_scaler
 			  				 )
 
 		cl.append(CL)
@@ -549,7 +559,9 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 		  				 thickness=t,
 		  				 CN1max_infinite=CN1max_inf,
 		  				 CDmin_infinite=CD0,
-		  				 drag_scale_factor = drag_scaler
+		  				 lift_scale_factor=lift_scaler, 
+			  			 drag_scale_factor=drag_scaler, 
+			  			 overall_scale_factor = overall_scaler
 		  				 )
 
 	
@@ -770,7 +782,8 @@ def draw_vectors(sail, rudder,
                    # [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
                    [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
                    # [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw']
-                   [pos_car[x], pos_car[y], Fs_car[x],  Fs_car[y], 'Fs']
+                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   [pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fs_car[y], 'Fr']
                    ]
 
 
@@ -1120,7 +1133,7 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 
 # main program
 time = np.arange(0, 20, 1)
-time = np.arange(2)
+time = np.arange(4)
 
 #sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 data = {'position' : [],    'apparent_wind' : [],    
