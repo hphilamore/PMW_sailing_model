@@ -126,6 +126,7 @@ v_pol = cart2pol(v_car)
 theta = 0;
 w = 0;
 tw_pol = np.array([pi , 5])
+
 # aw_pol = appWind(tw_pol, v_pol)
 # aw_car = pol2cart(aw_pol)
 
