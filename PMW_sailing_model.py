@@ -180,7 +180,7 @@ def appWind(tw_pol, v_pol):
 
 
 
-def attack_angle(part_angle, boat_angle, area, part, apparent_fluid_velocity):
+def attack_angle(part_angle, boat_angle, incident_vector_polar):
 	"""
 	Finds the angle of attack between:
 	- a surface (e.g. sail, hull, rudder)
@@ -189,7 +189,7 @@ def attack_angle(part_angle, boat_angle, area, part, apparent_fluid_velocity):
     Returns the smallest of the two angles between the two vectors
     Returned value always positive
 	"""
-	V_pol = apparent_fluid_velocity
+	V_pol = incident_vector_polar
 
 	if V_pol[1] == 0:       # if fluid (i.e. boat) not moving
 		alpha = 0 		    # angle of attack defaults to 0
@@ -220,12 +220,12 @@ def attack_angle(part_angle, boat_angle, area, part, apparent_fluid_velocity):
 	return alpha
 
 
-def lift_angle(part_angle, area, apparent_fluid_velocity):
+def lift_angle(part_angle, incident_vector_polar):
 	"""
 	Returns the angle of the lift force on a component, expressed in GRF
 	"""
 	
-	V_pol = apparent_fluid_velocity
+	V_pol = incident_vector_polar 
 
 	# dummy cartesian coords in local boat frame of ref 
 	dummy_len = 1
@@ -406,9 +406,9 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 
 	
 	# angle of attack    
-	alpha = attack_angle(part_angle, boat_angle, A, part, apparent_fluid_velocity = V_pol)
+	alpha = attack_angle(part_angle, boat_angle, incident_vector_polar = V_pol)
 
-	V_pol = apparent_fluid_velocity
+	#V_pol = apparent_fluid_velocity
 
 
 	# plot CL and CD across the whole attack angle range (0 --> pi rads)
@@ -434,8 +434,8 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 
 	if force == 'lift':
 		C = CL
-		angle = four_quad(lift_angle(part_angle, area=A, apparent_fluid_velocity = V_pol))
-	else:
+		angle = four_quad(lift_angle(part_angle, incident_vector_polar = V_pol))
+	else: # force == 'drag'
 		C = CD
 		angle = four_quad(V_pol[0])
 		#angle = V_pol[0]
@@ -713,7 +713,21 @@ def dthdt(w, Fs_pol, Fr_pol, theta, d_rudder):
 	%          out : angular velocity
 	%--------------------------------------------------------------------------
 	"""
-	return w + dwdt(w, Fs_pol, Fr_pol, theta, d_rudder)
+	#return w + dwdt(w, Fs_pol, Fr_pol, theta, d_rudder)
+
+	# Sail and drag forces in boat frame of ref
+	#Fs_pol[0] -= theta 
+	Fr_pol[0] -= theta 
+
+	# convert to cartesian coords
+	#Fs_car = pol2cart(Fs_pol)
+	Fr_car = pol2cart(Fr_pol)
+	#Fs_car, Fr_car = force_wrt_boat(Fs_pol, Fr_pol, theta)
+
+
+
+	return 0
+
 
 def rotation_drag(w):
 	"""
