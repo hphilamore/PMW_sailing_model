@@ -220,11 +220,10 @@ def attack_angle(part_angle, boat_angle, incident_vector_polar):
 	return alpha
 
 
-def lift_angle(part_angle, incident_vector_polar):
+def force_angle_LRF(part_angle, incident_vector_polar, force):
 	"""
-	Returns the angle of the lift force on a component, expressed in LRF
+	Returns the angle of the lift force on a component, expressed in LRF (i.e. relative to boat)
 	"""
-	
 	
 	dummy_len = 1.   # dummy cartesian coords in local boat frame of ref 
 	# Find minimum angle of part relative to boat (i.e. LRF)
@@ -245,18 +244,25 @@ def lift_angle(part_angle, incident_vector_polar):
 		#print('calculating lift angle : 2nd or 4th quadrant ')
 		if ((2 * pi - pa_abs >  fab  > pi*3/2 - pa_abs) or 
 			(pi - pa_abs     >  fab  > pi/2   - pa_abs)):
-			la = fab - pi/2
+			la = - pi/2
 		else:
-			la = fab + pi/2
+			la = + pi/2
 
 	else:	# 1st or 3rd quadrant
 		#print('calculating lift angle : 1st or 3rd quadrant ')
 		if (pa_abs      <  fab   <  pi/2    + pa_abs or 
 			pi + pa_abs <  fab   <  pi*3/2  + pa_abs):
-			la = fab + pi/2
+			la = + pi/2
 		else:
-			la = fab - pi/2
+			la = - pi/2
 
+	
+	# force angle is orthoganol to FLUID VELOCITY if force == lift
+	# otherwise leave as orthoganol to BOAT
+	if force == 'lift':
+		la += fab
+
+		
 	# convert angle to global refernce frame            
 	# la += theta
 	# la = four_quad(la)
@@ -434,7 +440,7 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 
 	if force == 'lift':
 		C = CL
-		angle = four_quad(lift_angle(part_angle, incident_vector_polar = V_pol))
+		angle = four_quad(force_angle_LRF(part_angle, V_pol, force))
 		# convert angle to global refernce frame            
 		angle += theta
 		angle = four_quad(angle)
@@ -727,15 +733,24 @@ def dthdt(Fr_pol, rudder_angle, boat_angle=theta):
 	#Fr_car = pol2cart(Fr_pol)
 	#Fs_car, Fr_car = force_wrt_boat(Fs_pol, Fr_pol, theta)
 
+	force = 'Frudder'
+
 	# magnitude of force contributing to turning moment of rudder
 	F_mag = Fr_pol[0] * np.sin(attack_angle(rudder_angle, boat_angle, Fr_pol))
 
-	# angle of force relative to baot axis
+	# angle of force relative to boat axis (LRF)
 	# (this tells us if the moment will act clockwise or anticlockwise)
-	F_ang = lift_angle(rudder_angle, Fr_pol)
+	F_ang = force_angle_LRF(rudder_angle, Fr_pol, force)
+	# check the angle is correctly represented:
+	F_ang = four_quad(F_ang)
+
+
+	# moment arm length
+	l = (boat_l / 2 +    # distance rudder hinge to boat COG
+		 (rudder_l / 2) * np.cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
+
 
 	
-	# moment arm length
 
 
 
