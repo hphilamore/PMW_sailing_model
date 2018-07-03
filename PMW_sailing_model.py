@@ -222,7 +222,7 @@ def attack_angle(part_angle, boat_angle, incident_vector_polar):
 
 def lift_angle(part_angle, incident_vector_polar):
 	"""
-	Returns the angle of the lift force on a component, expressed in GRF
+	Returns the angle of the lift force on a component, expressed in LRF
 	"""
 	
 	
@@ -258,8 +258,8 @@ def lift_angle(part_angle, incident_vector_polar):
 			la = fab - pi/2
 
 	# convert angle to global refernce frame            
-	la += theta
-	la = four_quad(la)
+	# la += theta
+	# la = four_quad(la)
 	return la 
 
 def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):  
@@ -435,6 +435,9 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	if force == 'lift':
 		C = CL
 		angle = four_quad(lift_angle(part_angle, incident_vector_polar = V_pol))
+		# convert angle to global refernce frame            
+		angle += theta
+		angle = four_quad(angle)
 	else: # force == 'drag'
 		C = CD
 		angle = four_quad(V_pol[0])
@@ -706,7 +709,7 @@ def dwdt(w, Fs_pol, Fr_pol, theta, rudder_a):
 
 
 
-def dthdt(w, Fs_pol, Fr_pol, theta, d_rudder):
+def dthdt(Fr_pol, rudder_angle, boat_angle=theta):
 	"""
 	%--------------------------------------------------------------------------
 	% The angular velocity of the PMW. 
@@ -717,12 +720,27 @@ def dthdt(w, Fs_pol, Fr_pol, theta, d_rudder):
 
 	# Sail and drag forces in boat frame of ref
 	#Fs_pol[0] -= theta 
-	Fr_pol[0] -= theta 
+	#Fr_pol[0] -= theta 
 
 	# convert to cartesian coords
 	#Fs_car = pol2cart(Fs_pol)
-	Fr_car = pol2cart(Fr_pol)
+	#Fr_car = pol2cart(Fr_pol)
 	#Fs_car, Fr_car = force_wrt_boat(Fs_pol, Fr_pol, theta)
+
+	# magnitude of force contributing to turning moment of rudder
+	F_mag = Fr_pol[0] * np.sin(attack_angle(rudder_angle, boat_angle, Fr_pol))
+
+	# angle of force relative to baot axis
+	# (this tells us if the moment will act clockwise or anticlockwise)
+	F_ang = lift_angle(rudder_angle, Fr_pol)
+
+	
+	# moment arm length
+
+
+
+
+
 
 
 
@@ -803,7 +821,7 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 	# rate of change of model parameters
 	dZdt = [dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
 	        dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
-	        dthdt(w, Fs_pol, Fr_pol, theta, ra),  
+	        dthdt(Fr_pol, ra, theta),  
 	        dwdt(w, Fs_pol, Fr_pol, theta, ra),
 			]
 
