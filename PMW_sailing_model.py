@@ -225,22 +225,22 @@ def lift_angle(part_angle, incident_vector_polar):
 	Returns the angle of the lift force on a component, expressed in GRF
 	"""
 	
-	V_pol = incident_vector_polar 
-
-	# dummy cartesian coords in local boat frame of ref 
-	dummy_len = 1
+	
+	dummy_len = 1.   # dummy cartesian coords in local boat frame of ref 
+	# Find minimum angle of part relative to boat (i.e. LRF)
 	pa_car = pol2cart([part_angle, dummy_len])
-
-
-	# min angle of surface to x axis, LRF
+	# Find minimum ABSOLLUTE angle of part relative to boat (i.e. LRF)
 	pa_abs= np.arctan(abs(pa_car[y])/ 
 		     	      abs(pa_car[x]))
 
-	# fluid velocity angle, LRF
+	
+	# Incident vector angle angle, LRF
+	V_pol = incident_vector_polar 
 	fab = V_pol[0] - theta
 	fab = four_quad(fab)
 
-	#establish orientation or sail or rudder  
+
+	# Establish orientation or sail or rudder  
 	if (safe_div(pa_car[x], pa_car[y])) < 0:	# 2nd or 4th quadrant 
 		#print('calculating lift angle : 2nd or 4th quadrant ')
 		if ((2 * pi - pa_abs >  fab  > pi*3/2 - pa_abs) or 
