@@ -241,7 +241,7 @@ def force_angle_LRF(part_angle, incident_vector_polar, force):
 	
 	# Incident vector angle angle, LRF
 	V_pol = incident_vector_polar 
-	print('theta3' , theta)
+	#print('theta3' , theta)
 	fab = V_pol[0] - theta
 	fab = four_quad(fab)
 
@@ -695,8 +695,17 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta):
 	Fh_car = pol2cart(Fh_pol)
 	v_car = pol2cart(v_pol)
 
-	thrust = Fs_car[x] + Fh_car[x]
-	side_force = Fs_car[y] + Fh_car[y] #+ hull_side_resistance
+	# forces on boat in LRF
+	surge = Fs_car[x] + Fh_car[x]
+	sway = Fs_car[y] + Fh_car[y] #+ hull_side_resistance
+	# only consider force in boat frame x direction
+	F_car_thrust = np.array([surge, 0.0])
+	# convert to polar coordinates
+	Fpol_thrust = cart2pol(F_car_thrust)
+	acceleration = np.array([Fpol_thrust[0], Fpol_thrust[1]/mass])
+	print('acc_pol_LRF', acceleration)
+
+
 
 	# F_car = np.array([thrust, side_force])
 
@@ -706,14 +715,13 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta):
 	# Fpol[0] += theta
 
 	# ignoring side force on boat
-	F_car_thrust = np.array([thrust, 0.0])
+	
 
-	print('acceleration_cart_LFC', F_car_thrust/mass)
-	# convert to polar coordinates
-	Fpol_thrust = cart2pol(F_car_thrust)
+	#print('acceleration_cart_LFC', F_car_thrust/mass)
+	
 
-	print('acceleration_pol_LRF', Fpol_thrust[0], 
-	                              Fpol_thrust[1]/mass)
+	#print('acceleration_pol_LRF', Fpol_thrust[0], 
+	           #                   Fpol_thrust[1]/mass)
 	# convert angle to GRF
 	Fpol_thrust[0] += theta
 
@@ -728,44 +736,54 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta):
 	
 	# acceleration = np.array([Fpol[0], 
 	# 	                     Fpol[1]/mass])
-	acceleration = np.array([Fpol_thrust[0], 
-	                         Fpol_thrust[1]/mass])
+	
 
-	print('acceleration_pol_GRF', acceleration)
-	print('theta', theta)
+	#print('acceleration_pol_GRF', acceleration)
+	#print('theta', theta)
 	return acceleration
 
 
-def dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta):
+def dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	"""
 	Velocity of the PMW. 
 	"""
-
-	# current vel cartesian
+	# initial vel cartesian
+	print('vel_pol_GRF_init_', v_pol)
 	v_car = pol2cart(v_pol)
+	print('vel_car_GRF_init_', v_car)
+
+	print('using global velocity to find initial local veloity...')
+	vel_pol_LRF_init = np.array([v_pol[0]-boat_angle, v_pol[1]])
+	print('vel_pol_LRF_init_', vel_pol_LRF_init)
+	v_car_LRF_init = pol2cart(vel_pol_LRF_init)
+	print('vel_car_LRF_init_', v_car_LRF_init)
+
 
 	# change in vel cartesian
-	# print('acceleration_pol_GRF2', dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta))
-	# print('acceleration_cart_GRF2', pol2cart(dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta)))
-	dvdt_car = pol2cart(dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta))
+	dvdt_pol_GRF = dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle)
+	print('acc_pol_GRF_', dvdt_pol_GRF)
+	dvdt_car_GRF = pol2cart(dvdt_pol_GRF)
 	#print()
-	print('velocity_cart', v_car + dvdt_car)
+	print('acc_car_GRF_', dvdt_car_GRF)
 
 
 
 	# finding velocity in local cartesian frame to prove robot is only travelling in local x direction
-	v_car_LRF =  pol2cart(np.array([v_pol[0]-theta, v_pol[1]]))
-	# change in vel cartesian
-	dvdt_global = dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta)
-	dvdt_car_LRF = pol2cart(np.array([dvdt_global[0]-theta, dvdt_global[1]]))
-	v_car_LRF = v_car_LRF + dvdt_car_LRF
-	print('local_vel_cart', v_car_LRF)
+	# v_car_LRF =  pol2cart(np.array([v_pol[0]-theta, v_pol[1]]))
+	# # change in vel cartesian
+	# dvdt_global = dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta)
+	# local_dvdt = np.array([dvdt_global[0]-theta, dvdt_global[1]])
+	# print('dvdt_pol_LRF', local_dvdt)
+	# print('dvdt_car_LRF', pol2cart(local_dvdt))
+	# dvdt_car_LRF = pol2cart(np.array([dvdt_global[0]-theta, dvdt_global[1]]))
+	# v_car_LRF = v_car_LRF + dvdt_car_LRF
+	# print('local_vel_cart', v_car_LRF)
 
 
-	return cart2pol(v_car + dvdt_car)
+	return cart2pol(v_car + dvdt_car_GRF)
 
 
-def dwdt(Fr_pol, rudder_angle, boat_angle=theta):
+def dwdt(Fr_pol, rudder_angle, boat_angle):
 	"""
 	Angular velocity of the boat due to the rudder moment
 	"""
@@ -815,7 +833,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle=theta):
 	return acc_ang
 
 
-def dthdt(w, Fr_pol, rudder_angle, boat_angle=theta):
+def dthdt(w, Fr_pol, rudder_angle, theta):
 	"""
 	%--------------------------------------------------------------------------
 	% The angular velocity of the PMW. 
@@ -826,7 +844,7 @@ def dthdt(w, Fr_pol, rudder_angle, boat_angle=theta):
 	#print('ang_vel', np.degrees(w + dwdt(Fr_pol, rudder_angle)))
 	#print('ang_acc', np.degrees(dwdt(Fr_pol, rudder_angle)))
 	
-	return w + dwdt(Fr_pol, rudder_angle)
+	return w + dwdt(Fr_pol, rudder_angle, theta)
 
 
 
@@ -839,7 +857,7 @@ def rotation_drag(w):
 
 def param_solve(Z_state, time=np.arange(0, 20, 1)):
 
-	global sa, ra
+	global sa, ra, vpol, pos_pol, aw_pol, theta, w
 	"""
 	Solves the time dependent parameters:
 	- Boat velocity             (polar, global frame)
@@ -853,9 +871,6 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 	"""
 
 	#print('true_wind', tw_pol)
-
-	global vpol, pos_pol
-	global aw_pol
 
     # give each state variable a name
 	pos_pol = Z_state[0]
@@ -907,8 +922,8 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 	# rate of change of model parameters
 	dZdt = [dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
 	        dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
-	        dthdt(w, Fr_pol, ra),  
-	        dwdt(Fr_pol, ra),
+	        dthdt(w, Fr_pol, ra, theta),  
+	        dwdt(Fr_pol, ra, theta),
 			]
 			
 
