@@ -137,9 +137,9 @@ hull_drag_scale_factor = 0.1
 
 
 # initial values of time-varying parameters
-Z_init_state = [pos_pol, 
+Z_init_state = [#pos_pol, 
 				v_pol,
-				theta,
+				#theta,
 				w] 
 
 
@@ -855,7 +855,7 @@ def rotation_drag(w):
 	return -w * 0.05
 
 
-def param_solve(Z_state, time=np.arange(0, 20, 1)):
+def param_solve(Z_state):
 
 	global sa, ra, vpol, pos_pol, aw_pol, theta, w
 	"""
@@ -873,10 +873,10 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 	#print('true_wind', tw_pol)
 
     # give each state variable a name
-	pos_pol = Z_state[0]
-	v_pol =   Z_state[1]
-	theta =   Z_state[2]
-	w =       Z_state[3]
+	#pos_pol = Z_state[0]
+	v_pol =   Z_state[0]#[1]
+	#theta =   Z_state[2]
+	w =       Z_state[0]#[3]
 
 	aw_pol = appWind(tw_pol, v_pol)
 	data["apparent_wind"].append(aw_pol)
@@ -920,9 +920,9 @@ def param_solve(Z_state, time=np.arange(0, 20, 1)):
 
 
 	# rate of change of model parameters
-	dZdt = [dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
+	dZdt = [#dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
 	        dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
-	        dthdt(w, Fr_pol, ra, theta),  
+	        #dthdt(w, Fr_pol, ra, theta),  
 	        dwdt(Fr_pol, ra, theta),
 			]
 			
@@ -954,11 +954,11 @@ for t in time:
 	print()
 	# data["sail_angle"].append(sa)
 	# data["rudder_angle"].append(ra)
-	print('boat_pos', pol2cart(Z_init_state[0]))
-	data["position"].append(Z_init_state[0])
-	data["velocity"].append(Z_init_state[1])
-	data["heading"].append(Z_init_state[2])	
-	data["angular_vel"].append(Z_init_state[3])
+	print('boat_pos', pol2cart(pos_pol))#Z_init_state[0]))
+	data["position"].append(pos_pol)#Z_init_state[0])
+	data["velocity"].append(Z_init_state[0])
+	data["heading"].append(theta)#Z_init_state[2])	
+	data["angular_vel"].append(Z_init_state[1])
 
 	# print('velocity_pol_start', data["velocity"][t])
 	# print('position_pol_start', data["position"][t])
@@ -978,7 +978,9 @@ for t in time:
 		# single variables
 		else:
 			Z_init_state[i] = z + s
-	print('theta2', theta)
+	
+	pos_pol = cart2pol(pol2cart(pos_pol)+pol2cart(Z_init_state[0]))
+	theta += Z_init_state[1]
 	# print('velocity_cart_end', pol2cart(Z_init_state[1]))
 	# print('position_cart_end', pol2cart(Z_init_state[0]))
 	# print()
