@@ -10,9 +10,11 @@ Inputs:
 
 Assumptions:
 - All hydronamic side force is translated into lateral motion (no heeling moment)
-- Hull shape behaves as aerofoil 
-- maximum normal force coefficent of 1 used to achieve characteristic post-stall lift and drag curves (empirical value 0.45)
+- Hull, sail and rudder shape behaves as aerofoil 
+- maximum normal force coefficent chosen to achieve characteristic post-stall lift and drag curves (empirical value 0.45)
 - hull drag too large if following same model as used for flat pat saila nd rudder, 3 scaling factors  applied to correct drag
+- scale factor also used for boat second moment of area
+- roll neglected for now
 
 TODO
 - plot sail area, chord, thicknes and max nornmal force coefficent should chnage dynamically with sail angle --> examine resulting drag coefficient
@@ -21,6 +23,7 @@ TODO
 - find slope of linear segment of pre-stall lift (simplified) more accuratelty
 - characterise real airfoil and subs in drag coefficent curve for estmaited curve in this model
 - replace lift angle gernatin function with simlper lift angle function that currently isn't working for unknown reason - needs checking
+
 """
 
 import numpy as np
@@ -866,6 +869,8 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	F_surge_pol = cart2pol(F_surge_car)
 	F_sway_pol = cart2pol(F_sway_car)
 
+	F_sway_pol_LRF = cart2pol(F_sway_car)
+
 	#print(F_surge_pol, F_sway_pol)
 
 	# convert to global coordinates
@@ -910,25 +915,43 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 
 
-	return acceleration
+	return acceleration, F_sway_pol_LRF
 
 
-def inertial_moment():
+def inertial_moment(F_sway):
 	"""
 	Find the inertial moment on the boat due to hull resistance to sway force
 	Imbalance of bow and stern about the COG causes a turning moment
 	"""
 
-	Fsurge_GRF = data['surge_force'][-1]
+	#Fsurge_GRF = data['surge_force'][-1]
+
+	
+	# F_sway_pol_LRF = np.array([F_sway_pol_LRF[0] + pi, 
+	# 						   F_sway_pol_LRF[1]])
 
 	# inertial force acts in opposition to surge force
-	FI_GRF = np.array([Fsurge_GRF[0] + pi, Fsurge[1]])
-
 	# assume bow inertia is double the stern inertia
-	FI_bow_GRF   = np.array([FI_GRF[0], Fsurge[1]*2/3])
-	FI_stern_GRF = np.array([FI_GRF[0], Fsurge[1]*3/3])
+	FI_bow_LRF   = np.array([F_sway[0] + 2*pi, F_sway[1]*2/3])
+	FI_stern_LRF = np.array([F_sway[0] + 2*pi, F_sway[1]*3/3])
 
 	# moments act at point half the distnace between COG and stern or COG and bow
+	bow_ml = boat_l / 4
+	stern_ml = boat_l / 4
+
+	# if local sway force is in port (left) direction, Mbow --> clockwise (-ve), Mstern --> anti-clockwise (+ve)
+	# if local sway force is in starboard (right) direction, Mbow --> anti-clockwise (-ve), Mstern --> clockwise (+ve)
+	if 0 <= F_sway[0] < pi:
+		Mbow_dir = -1
+		Mstern_dir = 1
+	else:
+		Mbow_dir = 1
+		Mstern_dir = -1
+
+	M_inertial = (FI_bow_LRF[1] * bow_ml * Mbow_dir +
+		          FI_stern_LRF[1] * stern_ml * Mstern_dir)
+
+	return M_inertial
 
 	
 
@@ -972,73 +995,47 @@ def inertial_moment():
 # 	return cart2pol(v_car + dvdt_car_GRF)
 
 
-def dwdt(Fr_pol, rudder_angle, boat_angle):
+def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
 	"""
 	Angular velocity of the boat due to the rudder moment
 	"""
-
-	force = 'Frudder'
-
-
+	# First find rudder moment
+    # angle of attack of rudder force to rudder
 	angle = attack_angle(rudder_angle, boat_angle, Fr_pol)
-	#print('attack angle', np.degrees(angle))
-
-	#print('rudder_force', Fr_pol)
-	#print('attack angle', np.degrees(angle))
-
-
-	# magnitude of force contributing to turning moment of rudder
+	# magnitude of force contributing to rudder moment about boat COG
 	F_mag = Fr_pol[1] * sin(angle)
-
-	# angle of force relative to boat axis (LRF)
-	# check in four quadrants
-	#rudder_angle = four_quad(rudder_angle)
-	#print("Fr_ang_GRF", Fr_pol[0])
-	#print("boat_angle", boat_angle)
-	#print("diff", boat_angle - Fr_pol[0])
-	# put Force in boar LRF
-
-	#Fr_pol[0] = four_quad(Fr_pol[0] - boat_angle)
-
+	# rudder force, LRF
 	Fr_pol_LRF = np.array([four_quad(Fr_pol[0] - boat_angle), Fr_pol[1]])
-
-
+	# angle indication direction of rudder moment in boat LRF (i.e. pi/2 or -pi/2)
 	F_ang = moment_force_angle(rudder_angle, Fr_pol, boat_angle)
 	print('F_ang', F_ang)
-
-
-	# #print("Fr_ang_LRF", Fr_pol[0])
-	# if Fr_pol_LRF[0] <= pi : # startboard turn (to rught), clockwise
-	# 		F_ang = pi/2
-	# else: # Fr_pol[0] > pi, port turn (to left), anti-clockwise
-	# 		F_ang = - pi/2
-
-
-	# (this tells us if the moment will act clockwise (F_ang == pi/2) or anticlockwise (F_ang == -pi/2))
-	# F_ang = force_angle_LRF(rudder_angle, Fr_pol, force)
-	# check the angle is correctly represented:
-	# F_ang = four_quad(F_ang)
-	#print('F_ang', F_ang)
-
+	# store rudder moment force for pltting
 	data['rudder_moment_force'].append(np.array([F_ang + boat_angle, F_mag]))
 	#print('rudder_momoent_force', np.array([F_ang, F_mag]))
-	
-
 	# moment arm length
-	l = (boat_l / 2 +    # distance rudder hinge to boat COG
-		 (rudder_l / 2) * cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
-
+	rudder_ml = (boat_l / 2 +    # distance rudder hinge to boat COG
+		        (rudder_l / 2) * cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
 	
 	# moment about boat COG
 	# anti-clockwise is positive direction
-	M = F_mag * l * -np.sign(F_ang)
+	M_rudder = F_mag * rudder_ml * -np.sign(F_ang)
+
+	M_inertia = inertial_moment(F_sway_pol_LRF)
+
+	M = M_rudder + M_inertia
+
+	print('m_rudder', M_rudder)
+	print('m inertia', M_inertia)
+
 
 	# second moment of area in yaw axis (Physics of Sailing, By John Kimball, P89)
-	Iyaw = (1/3) * mass * (boat_l/2)**2 *10
+	Iyaw = (1/3) * mass * (boat_l/2)**2 * 5
 	#print(Iyaw)
 
 	# convert to acceleration by dividing moment by mass moment of area
-	acc_ang = M / Iyaw
+	acc_ang = M_rudder / Iyaw
+
+
 
 	
 	#print()
@@ -1127,24 +1124,28 @@ def param_solve(Z_state):
 	# print()
 	data['rudder_force'].append(Fr_pol)
 	print(data['rudder_force'][-1])
-	print()
+	#print()
 	data['hull_force'].append(Fh_pol)
 
 
 	# rate of change of model parameters
-	dZdt = [#dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
-	        dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
-	        #dthdt(w, Fr_pol, ra, theta),  
-	        dwdt(Fr_pol, ra, theta),
-			]
-			
+	# dZdt = [#dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
+	#         dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta), 
+	#         #dthdt(w, Fr_pol, ra, theta),  
+	#         dwdt(Fr_pol, ra, theta),
+	# 		]
+	acceleration, F_sway_pol_LRF = dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta)
 
-	return np.array(dZdt)
+	ang_acceleration =  dwdt(Fr_pol, ra, theta, F_sway_pol_LRF)
+
+			
+	return np.array([acceleration, ang_acceleration])
+	#return np.array(dZdt)
   
 
 # MAIN PROGRAM
 time = np.arange(0, 20, 1)
-time = np.arange(10)
+time = np.arange(2)
 
 #sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 data = {'position' : [],    'apparent_wind' : [],    
