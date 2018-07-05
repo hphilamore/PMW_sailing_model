@@ -12,7 +12,7 @@ Assumptions:
 - All hydronamic side force is translated into lateral motion (no heeling moment)
 - Hull shape behaves as aerofoil 
 - maximum normal force coefficent of 1 used to achieve characteristic post-stall lift and drag curves (empirical value 0.45)
-- hull drag too large if following same model as used for flat pat saila nd rudder, scaling factor of 0.1 applied to post-stall drag
+- hull drag too large if following same model as used for flat pat saila nd rudder, 3 scaling factors  applied to correct drag
 
 TODO
 - plot sail area, chord, thicknes and max nornmal force coefficent should chnage dynamically with sail angle --> examine resulting drag coefficient
@@ -120,7 +120,7 @@ CN1inf_h_min = 0
 # Minimum drag coefficient (i.e. CD at angle of attack = A0) for an infinite foil
 CD0_r = 0
 CD0_s = 0
-CD0_h = 0.01
+CD0_h = 0.001
 
 # intial conditions
 pos_car = np.array([0, 0])      # boat position, GRF (global reference frame)
@@ -134,10 +134,12 @@ tw_pol = np.array([2*pi - deg2rad(45) , 5])
 tw_pol = np.array([pi - deg2rad(25) , 5])
 tw_pol = np.array([2*pi , 5])
 
-ra = pi/10                          # rudder angle, LRF (local reference frame)
+ra = -pi/10                          # rudder angle, LRF (local reference frame)
 sa = pi/2                       # sail angle, LRF
 
-hull_drag_scale_factor = 0.1
+hull_drag_scale_factor = 0.01
+hull_pre_stall_drag_scale_factor = 0.1
+hull_pre_stall_scale_factor = 8
 
 
 # initial values of time-varying parameters
@@ -461,8 +463,12 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):
 		CD2 = CD1max + (CD2max - CD1max) * sin(deg2rad(ang))
 
 	if part == 'hull':
-		CL2 *= hull_drag_scale_factor
-		CD2 *= hull_drag_scale_factor	
+		CL2 *= hull_drag_scale_factor #* 1.2
+		CD2 *= hull_drag_scale_factor #* 1.2	
+
+		CL1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor
+		CD1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor * hull_pre_stall_drag_scale_factor
+
 
 	CL = max(CL1, CL2)
 
@@ -550,7 +556,7 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 		angle = four_quad(force_angle_LRF(part_angle, V_pol, force))
 
 		#angle = four_quad(lift_angle(part_angle, V_pol, boat_angle))
-		print('ANGLE', angle)
+
 		# convert angle to global refernce frame            
 		angle += theta
 		angle = four_quad(angle)
@@ -762,19 +768,19 @@ def draw_vectors(rudder, sail,
 	vectors = [
                    #[pos_car[x],          pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
                    #[pos_car[x],          pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
-                   [COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
-                   [COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
-                   #[pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
-                   #[pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
+                   #[COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
+                   #[COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
+                   [pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
+                   [pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
                    [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
                    [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
                    #[pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
-                   #[pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
-                   #[pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
+                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   [pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
                    #[pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr'],
-                   #[COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
-                   ##[pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
-                   #[pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
+                   [COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
+                   [pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
+                   [pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
                    #[COErudder[x]   , COErudder[y], Fr_moment_car[x],  Fr_moment_car[y], 'Fr_moment']
                    ]
 
@@ -784,7 +790,7 @@ def draw_vectors(rudder, sail,
 	#for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
 	for n, (V, c) in enumerate(zip(vectors, colors), 1):
 		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		quiver_scale = 20
+		quiver_scale = 50
 		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
 		#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 		quiver_key_scale = quiver_scale/10#100
@@ -1119,7 +1125,7 @@ def param_solve(Z_state):
 
 # MAIN PROGRAM
 time = np.arange(0, 20, 1)
-time = np.arange(6)
+time = np.arange(8)
 
 #sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 data = {'position' : [],    'apparent_wind' : [],    
