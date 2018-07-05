@@ -20,6 +20,7 @@ TODO
 - only solve acceleration at each timestep - position can be derived
 - find slope of linear segment of pre-stall lift (simplified) more accuratelty
 - characterise real airfoil and subs in drag coefficent curve for estmaited curve in this model
+- replace lift angle gernatin function with simlper lift angle function that currently isn't working for unknown reason - needs checking
 """
 
 import numpy as np
@@ -133,7 +134,7 @@ tw_pol = np.array([2*pi - deg2rad(45) , 5])
 tw_pol = np.array([pi - deg2rad(25) , 5])
 tw_pol = np.array([2*pi , 5])
 
-ra = -pi/10                          # rudder angle, LRF (local reference frame)
+ra = pi/10                          # rudder angle, LRF (local reference frame)
 sa = pi/2                       # sail angle, LRF
 
 hull_drag_scale_factor = 0.1
@@ -278,54 +279,97 @@ def force_angle_LRF(part_angle, incident_vector_polar, force):
 	# la = four_quad(la)
 	return la
 
-def force_angle_LRF_(part_angle, incident_vector_polar, force):
+def lift_angle(part_angle, incident_vector_polar, boat_angle):
 	"""
-	Returns the angle of the lift force on a component, expressed in LRF (i.e. relative to boat)
+	Returns the angle of the lift force on a component, expressed in GRF (i.e. relative to boat)
 	"""
+
+	# First find angle of incident vector in part frame of ref
+	# incident cevotr in globa frame of ref
+	V_pol = incident_vector_polar
+	# incident vector in boat LRF
+	V_pol[0] -= boat_angle
+	# incident vector in part RF
+	V_pol[0] -= part_angle
+
+	if ((0 <= V_pol[0] < pi/2) or (pi <= V_pol[0] < pi*3/2)):   # first or third quadrant relative to part
+		angle = V_pol[0] + pi/2
+	else: # second or fourth quadrantt relative to part
+		angle = V_pol[0] - pi/2
+
+	# convert angle back to GRF
+	angle += (part_angle)# + boat_angle)
+	return angle
+
+def moment_force_angle(part_angle, incident_vector_polar, boat_angle):
+	"""
+	Returns the angle of the force used in a couple about the boat COG, angle is orthoganol to boat long (bow to stern) axis
+	Expressed in LRF
+	"""
+
+	# First find angle of incident vector in part frame of ref
+	# incident cevotr in globa frame of ref
+	V_pol = incident_vector_polar
+	# incident vector in boat LRF
+	V_pol[0] -= boat_angle
+	# incident vector in part RF
+	V_pol[0] -= part_angle
 	
-	dummy_len = 1.   # dummy cartesian coords in local boat frame of ref 
-	# Find minimum angle of part relative to boat (i.e. LRF)
-	pa_car = pol2cart([part_angle, dummy_len])
-	# Find minimum ABSOLLUTE angle of part relative to boat (i.e. LRF)
-	pa_abs= np.arctan(abs(pa_car[y])/ 
-		     	      abs(pa_car[x]))
+	if (0 <= V_pol[0] < pi):   # first or second quadrant relative to part
+		angle = pi/2
+	else: 	                   # third or fourth quadrantt relative to part
+		angle = - pi/2
+
+	return angle
+
+# def force_angle_LRF_(part_angle, incident_vector_polar, force):
+# 	"""
+# 	Returns the angle of the lift force on a component, expressed in LRF (i.e. relative to boat)
+# 	"""
+	
+# 	dummy_len = 1.   # dummy cartesian coords in local boat frame of ref 
+# 	# Find minimum angle of part relative to boat (i.e. LRF)
+# 	pa_car = pol2cart([part_angle, dummy_len])
+# 	# Find minimum ABSOLLUTE angle of part relative to boat (i.e. LRF)
+# 	pa_abs= np.arctan(abs(pa_car[y])/ 
+# 		     	      abs(pa_car[x]))
 
 	
-	# Incident vector angle angle, LRF
-	V_pol = incident_vector_polar 
-	#print('theta3' , theta)
-	fab = V_pol[0] - theta
-	fab = four_quad(fab)
+# 	# Incident vector angle angle, LRF
+# 	V_pol = incident_vector_polar 
+# 	#print('theta3' , theta)
+# 	fab = V_pol[0] - theta
+# 	fab = four_quad(fab)
 
 
-	# Establish orientation or sail or rudder  
-	if (safe_div(pa_car[x], pa_car[y])) < 0:	# 2nd or 4th quadrant 
-		#print('calculating lift angle : 2nd or 4th quadrant ')
-		if ((2 * pi - pa_abs >  fab  > pi*3/2 - pa_abs) or 
-			(pi - pa_abs     >  fab  > pi/2   - pa_abs)):
-			la = - pi/2
-		else:
-			la = + pi/2
+# 	# Establish orientation or sail or rudder  
+# 	if (safe_div(pa_car[x], pa_car[y])) < 0:	# 2nd or 4th quadrant 
+# 		#print('calculating lift angle : 2nd or 4th quadrant ')
+# 		if ((2 * pi - pa_abs >  fab  > pi*3/2 - pa_abs) or 
+# 			(pi - pa_abs     >  fab  > pi/2   - pa_abs)):
+# 			la = - pi/2
+# 		else:
+# 			la = + pi/2
 
-	else:	# 1st or 3rd quadrant
-		#print('calculating lift angle : 1st or 3rd quadrant ')
-		if (pa_abs      <  fab   <  pi/2    + pa_abs or 
-			pi + pa_abs <  fab   <  pi*3/2  + pa_abs):
-			la = + pi/2
-		else:
-			la = - pi/2
+# 	else:	# 1st or 3rd quadrant
+# 		#print('calculating lift angle : 1st or 3rd quadrant ')
+# 		if (pa_abs      <  fab   <  pi/2    + pa_abs or 
+# 			pi + pa_abs <  fab   <  pi*3/2  + pa_abs):
+# 			la = + pi/2
+# 		else:
+# 			la = - pi/2
 
 	
-	# force angle is orthoganol to FLUID VELOCITY if force == lift
-	# otherwise leave as orthoganol to BOAT
-	if force == 'lift':
-		la += fab
+# 	# force angle is orthoganol to FLUID VELOCITY if force == lift
+# 	# otherwise leave as orthoganol to BOAT
+# 	if force == 'lift':
+# 		la += fab
 
 		
-	# convert angle to global refernce frame            
-	# la += theta
-	# la = four_quad(la)
-	return la 
+# 	# convert angle to global refernce frame            
+# 	# la += theta
+# 	# la = four_quad(la)
+# 	return la 
 
 def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):  
 	"""
@@ -504,6 +548,9 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	if force == 'lift':
 		C = CL
 		angle = four_quad(force_angle_LRF(part_angle, V_pol, force))
+
+		#angle = four_quad(lift_angle(part_angle, V_pol, boat_angle))
+		print('ANGLE', angle)
 		# convert angle to global refernce frame            
 		angle += theta
 		angle = four_quad(angle)
@@ -713,19 +760,19 @@ def draw_vectors(rudder, sail,
 
 
 	vectors = [
-                   [pos_car[x],          pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
-                   [pos_car[x],          pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
+                   #[pos_car[x],          pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
+                   #[pos_car[x],          pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
                    [COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
                    [COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
-                   [pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
-                   [pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
-                   #[pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
+                   #[pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
+                   #[pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
+                   [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
                    [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
                    #[pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
-                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
-                   [pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
+                   #[pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   #[pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
                    #[pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr'],
-                   [COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
+                   #[COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    ##[pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
                    #[pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
                    #[COErudder[x]   , COErudder[y], Fr_moment_car[x],  Fr_moment_car[y], 'Fr_moment']
@@ -931,11 +978,15 @@ def dwdt(Fr_pol, rudder_angle, boat_angle):
 	Fr_pol_LRF = np.array([four_quad(Fr_pol[0] - boat_angle), Fr_pol[1]])
 
 
-	#print("Fr_ang_LRF", Fr_pol[0])
-	if Fr_pol_LRF[0] <= pi : # startboard turn (to rught), clockwise
-			F_ang = pi/2
-	else: # Fr_pol[0] > pi, port turn (to left), anti-clockwise
-			F_ang = - pi/2
+	F_ang = moment_force_angle(rudder_angle, Fr_pol, boat_angle)
+	print('F_ang', F_ang)
+
+
+	# #print("Fr_ang_LRF", Fr_pol[0])
+	# if Fr_pol_LRF[0] <= pi : # startboard turn (to rught), clockwise
+	# 		F_ang = pi/2
+	# else: # Fr_pol[0] > pi, port turn (to left), anti-clockwise
+	# 		F_ang = - pi/2
 
 
 	# (this tells us if the moment will act clockwise (F_ang == pi/2) or anticlockwise (F_ang == -pi/2))
@@ -955,7 +1006,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle):
 	
 	# moment about boat COG
 	# anti-clockwise is positive direction
-	M = F_mag * l * np.sign(F_ang)
+	M = F_mag * l * -np.sign(F_ang)
 
 	# second moment of area in yaw axis (Physics of Sailing, By John Kimball, P89)
 	Iyaw = (1/3) * mass * (boat_l/2)**2 *10
@@ -1068,7 +1119,7 @@ def param_solve(Z_state):
 
 # MAIN PROGRAM
 time = np.arange(0, 20, 1)
-time = np.arange(5)
+time = np.arange(6)
 
 #sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 data = {'position' : [],    'apparent_wind' : [],    
