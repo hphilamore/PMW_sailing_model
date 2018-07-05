@@ -134,7 +134,7 @@ tw_pol = np.array([2*pi - deg2rad(45) , 5])
 tw_pol = np.array([pi - deg2rad(25) , 5])
 tw_pol = np.array([2*pi , 5])
 
-ra = -pi/10                          # rudder angle, LRF (local reference frame)
+ra = pi/10                          # rudder angle, LRF (local reference frame)
 sa = pi/2                       # sail angle, LRF
 
 hull_drag_scale_factor = 0.01
@@ -883,7 +883,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	#sway =  Fs_car[y] + Fh_car[y] #+ hull_side_resistance
 
 	# only consider force in boat frame x direction
-	F_car_thrust = F_surge_car #= np.array([F[x], 0.0]) # np.array([surge, 0.0])
+	F_car_thrust = F#F_surge_car #= np.array([F[x], 0.0]) # np.array([surge, 0.0])
 	# convertto polar coords
 	Fpol_thrust = cart2pol(F_car_thrust)
 
@@ -912,6 +912,25 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 	return acceleration
 
+
+def inertial_moment():
+	"""
+	Find the inertial moment on the boat due to hull resistance to sway force
+	Imbalance of bow and stern about the COG causes a turning moment
+	"""
+
+	Fsurge_GRF = data['surge_force'][-1]
+
+	# inertial force acts in opposition to surge force
+	FI_GRF = np.array([Fsurge_GRF[0] + pi, Fsurge[1]])
+
+	# assume bow inertia is double the stern inertia
+	FI_bow_GRF   = np.array([FI_GRF[0], Fsurge[1]*2/3])
+	FI_stern_GRF = np.array([FI_GRF[0], Fsurge[1]*3/3])
+
+	# moments act at point half the distnace between COG and stern or COG and bow
+
+	
 
 # def dpdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 # 	"""
@@ -1063,7 +1082,7 @@ def param_solve(Z_state):
 	#pos_pol = Z_state[0]
 	v_pol =   Z_state[0]#[1]
 	#theta =   Z_state[2]
-	w =       Z_state[0]#[3]
+	w =       Z_state[1]#[3]
 
 	aw_pol = appWind(tw_pol, v_pol)
 	data["apparent_wind"].append(aw_pol)
@@ -1125,7 +1144,7 @@ def param_solve(Z_state):
 
 # MAIN PROGRAM
 time = np.arange(0, 20, 1)
-time = np.arange(8)
+time = np.arange(10)
 
 #sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 data = {'position' : [],    'apparent_wind' : [],    
