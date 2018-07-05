@@ -804,7 +804,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	Fh_car = pol2cart(Fh_pol_LRF)
 	v_car = pol2cart(v_pol)
 
-	F = Fs_car + Fh_car# + Fr_car
+	F = Fs_car + Fh_car + Fr_car
 
 	F_surge_car = np.array([F[x], 0.0])
 	F_sway_car = np.array([0.0, F[y]])
