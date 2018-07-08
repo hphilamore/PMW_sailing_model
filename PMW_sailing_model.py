@@ -507,6 +507,18 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):
 		CL1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor
 		CD1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor * hull_pre_stall_drag_scale_factor
 
+	# if part == 'rudder':
+		# CL2 *= rudder_scale_factor #* 1.2
+		# CD2 *= rudder_scale_factor #* 1.2	
+
+		# CL1 *= rudder_scale_factor
+		# CD1 *= rudder_scale_factor
+
+
+	if part == 'sail':
+		CD2 *= sail_drag_scale_factor #* 1.2
+		CD1 *= sail_drag_scale_factor #* 1.2
+
 
 	CL = max(CL1, CL2)
 
@@ -579,6 +591,7 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	#fig = plt.subplots()
 	# if part == 'hull':
 	if part == 'rudder':
+	#if part == 'sail':
 		attack_a= rad2deg(attack_a)
 		plt.plot(attack_a, cl, label='lift '+ part)
 		plt.plot(attack_a, cd, label='drag '+ part)
@@ -807,22 +820,23 @@ def draw_vectors(rudder, sail,
 
 
 	vectors = [
-                   #[pos_car[x],          pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
-                   #[pos_car[x],          pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
                    #[COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
                    #[COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
                    #[pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
                    #[pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
+                   [pos_car[x], pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
                    [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
-                   #[pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
                    [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
-                   #[pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
-                   [pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
+                   [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],    
+                   [pos_car[x], pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
+                   
+                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   #[pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
                    [pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    #[COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    [pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
                    [pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
-                   #[COErudder[x]   , COErudder[y], Fr_moment_car[x],  Fr_moment_car[y], 'Fr_moment']
+                   [COErudder[x]   , COErudder[y], Fr_moment_car[x],  Fr_moment_car[y], 'Fr_moment']
                    ]
 
 
@@ -927,7 +941,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	#sway =  Fs_car[y] + Fh_car[y] #+ hull_side_resistance
 
 	# only consider force in boat frame x direction
-	F_car_thrust = F#F_surge_car #= np.array([F[x], 0.0]) # np.array([surge, 0.0])
+	F_car_thrust = F# F_surge_car#np.array([F[x], 0.1*F[y]]) # F#F_surge_car #= np.array([F[x], 0.0]) # np.array([surge, 0.0])
 	# convertto polar coords
 	Fpol_thrust = cart2pol(F_car_thrust)
 
@@ -1199,9 +1213,9 @@ def param_solve(Z_state):
 
 # MAIN PROGRAM
 
-def main(rudder_angle = pi/10 , 
-		 sail_angle = pi/2,
-		 true_wind_polar = np.array([pi + (pi/6), 5]),
+def main(rudder_angle = 0 , 
+		 sail_angle = pi/6,
+		 true_wind_polar = np.array([pi - (pi/6), 5]),
 		 save_figs = False,
 		 fig_location = save_location):
 
@@ -1217,7 +1231,7 @@ def main(rudder_angle = pi/10 ,
 	global A_s, A_r, A_h, ARs, ARr, ARh
 	global c_s, c_r, c_h, t_s, t_r, t_h, ra, sa
 	global CN1inf_s_max, CN1inf_r_max, CN1inf_h_max, CN1inf_s_min, CN1inf_r_min, CN1inf_h_min, CD0_s, CD0_r, CD0_h
-	global hull_drag_scale_factor, hull_pre_stall_drag_scale_factor, hull_pre_stall_scale_factor
+	global hull_drag_scale_factor, hull_pre_stall_drag_scale_factor, hull_pre_stall_scale_factor, sail_drag_scale_factor, rudder_scale_factor
 	# initial conditions
 	global pos_car, pos_pol, v_car, v_pol, theta, w
 	global Z_init_state, data, Time
@@ -1295,6 +1309,10 @@ def main(rudder_angle = pi/10 ,
 	hull_pre_stall_drag_scale_factor = 0.1
 	hull_pre_stall_scale_factor = 8
 
+	rudder_scale_factor = 10
+
+	sail_drag_scale_factor = 0.1
+
 
 	# initial values of Time-varying parameters
 	Z_init_state = [#pos_pol, 
@@ -1303,7 +1321,7 @@ def main(rudder_angle = pi/10 ,
 					w] 
 
 	Time = np.arange(0, 20, 1)
-	Time = np.arange(3)
+	Time = np.arange(5)
 
 	#sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 	data = {'position' : [],    'apparent_wind' : [],    
