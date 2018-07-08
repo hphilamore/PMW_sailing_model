@@ -590,8 +590,8 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 		cd.append(CD)
 	#fig = plt.subplots()
 	# if part == 'hull':
-	if part == 'rudder':
-	#if part == 'sail':
+	#if part == 'rudder':
+	if part == 'sail':
 		attack_a= rad2deg(attack_a)
 		plt.plot(attack_a, cl, label='lift '+ part)
 		plt.plot(attack_a, cd, label='drag '+ part)

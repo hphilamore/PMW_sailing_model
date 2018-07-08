@@ -15,11 +15,15 @@ sail_angles = [0]
 
 sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
 
-rudder_angles = [pi/8]
+rudder_angles = [0]
 sail_angles = [pi/6]
 
 true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
 true_wind_speed = [5]
+
+# sail_angles = []
+# for twd in true_wind_dirs:
+# 	if 
 
 
 for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
