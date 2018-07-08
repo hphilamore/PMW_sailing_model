@@ -941,7 +941,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	#sway =  Fs_car[y] + Fh_car[y] #+ hull_side_resistance
 
 	# only consider force in boat frame x direction
-	F_car_thrust = F# F_surge_car#np.array([F[x], 0.1*F[y]]) # F#F_surge_car #= np.array([F[x], 0.0]) # np.array([surge, 0.0])
+	F_car_thrust = np.array([F[x], 0.05*F[y]])# F# F_surge_car#np.array([F[x], 0.1*F[y]]) # F#F_surge_car #= np.array([F[x], 0.0]) # np.array([surge, 0.0])
 	# convertto polar coords
 	Fpol_thrust = cart2pol(F_car_thrust)
 
