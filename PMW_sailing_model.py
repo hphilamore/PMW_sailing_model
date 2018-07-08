@@ -48,6 +48,13 @@ from scipy.integrate import odeint
 import sys, os, time, fnmatch
 
 
+for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
+		for d in dirs:    
+			if fnmatch.fnmatch(d, "sailing_simulation_results"):
+				save_location = os.path.join(root, d) + '/' + time.strftime('%Y-%m-%d--%H-%M-%S')
+				os.makedirs(save_location, exist_ok=True)
+
+
 # x, y = 0, 1
 
 
@@ -229,19 +236,33 @@ def attack_angle(part_angle, boat_angle, incident_vector_polar):
 		part_angle = four_quad(part_angle)
 
 		# convert angles to cartesian
-		plane_car = pol2cart([part_angle, 1])
+		part_car = pol2cart([part_angle, 1])
 		v_fluid_car = pol2cart(V_pol)
 
+
 		# use dot product to find angle cosine
-		U = plane_car
+		U = part_car
 		V = v_fluid_car
 		cosalpha = np.dot(U, V) / np.dot(np.linalg.norm(U), np.linalg.norm(V))
-	
+
+		# round cosalpha to 15dp to deal with floating point error
+		cosalpha = round(cosalpha, 15)
+
+		print('part', U)
+		print('fluid', V)
+		print('cosalpha', cosalpha)
 		alpha = abs(np.arccos(cosalpha))
 
 		# find smallest of two possible angles
 		if alpha > pi/2:
 			alpha = pi - alpha
+
+		print('part_angle', part_angle)
+		print('boat_angle', boat_angle)
+		print('incident_vector_polar', incident_vector_polar)
+		print('alpha', alpha)
+
+
 
 	return alpha
 
@@ -470,11 +491,14 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):
 		CL2 = -0.032 * (a - 90.0) + RCL2 * ((a - 90.0)/51.0)**N2
 
 	# Post stall drag
+	#print('a', a)
+	#print('ACL1', ACL1)
 	if (2*A0 <= a < ACL1):
 		CD2 = 0
 	elif ACL1 <= a:
 		ang = ((a - ACD1)/(90.0 - ACD1)) * 90 
 		CD2 = CD1max + (CD2max - CD1max) * sin(deg2rad(ang))
+		#print('CD2', CD2)
 
 	if part == 'hull':
 		CL2 *= hull_drag_scale_factor #* 1.2
@@ -548,6 +572,7 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 	attack_a = np.linspace(0, pi, 1000)
 	cl, cd = [], []
 	for a in attack_a:
+		#print("finding attack 1")
 		CL, CD = aero_coeffs(a, AR, c, t, CN1inf_max, CD0, part)  				 
 		cl.append(CL)
 		cd.append(CD)
@@ -563,6 +588,7 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 
 
 	# find lift and drag coefficent 
+	#print("finding attack 2")
 	CL, CD = aero_coeffs(alpha, AR, c, t, CN1inf_max, CD0, part)
 
 	if force == 'lift':
@@ -1066,17 +1092,21 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
 # 	#print('ang_acc', np.degrees(dwdt(Fr_pol, rudder_angle)))
 	
 # 	return w + dwdt(Fr_pol, rudder_angle, theta)
-def save_fig():
+def save_fig(fig_location, title):
 	"""
 	Locates the simulation results within local folder 'Projects' and saves figure
 	"""
-	for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
-    		for d in dirs:    
-    			if fnmatch.fnmatch(d, "sailing_simulation_results"):
-    				save_location = os.path.join(root, d)
-    				dir_name = time.strftime('%Y-%m-%d--%H-%M-%S')
-    				os.makedirs(f'{save_location}/{dir_name}', exist_ok=True)
-    				plt.savefig(f'{save_location}/{dir_name}/r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)},{round(tw_pol[1],3)}.pdf')
+	#plt.savefig(f'{save_location}/r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}.pdf')
+	#plt.savefig(f'{fig_location}/{title}.pdf')
+	#plt.savefig(f'{fig_location}/r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}.pdf')
+	plt.savefig(f'{fig_location}/{title}.pdf')
+	# for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
+ #    		for d in dirs:    
+ #    			if fnmatch.fnmatch(d, "sailing_simulation_results"):
+ #    				save_location = os.path.join(root, d)
+ #    				dir_name = time.strftime('%Y-%m-%d--%H-%M-%S')
+ #    				os.makedirs(f'{save_location}/{dir_name}', exist_ok=True)
+ #    				plt.savefig(f'{save_location}/{dir_name}/r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}.pdf')
     				#plt.savefig(f'{save_location}/r{ra}_s{sa}_tw{tw_pol}.pdf')
 
 
@@ -1170,7 +1200,8 @@ def param_solve(Z_state):
 def main(rudder_angle = pi/10 , 
 		 sail_angle = pi/2,
 		 true_wind_polar = np.array([pi + (pi/6), 5]),
-		 save_figs = True):
+		 save_figs = True,
+		 fig_location = save_location):
 
 	"""
 	Main program.
@@ -1361,18 +1392,13 @@ def main(rudder_angle = pi/10 ,
 			         tw_pol,                 data["apparent_wind"][i],
 			         data['surge_force'][i], data['sway_force'][i], data["rudder_moment_force"][i])
 
+	title = f'r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}'	
+	plt.title(title)	
+
 	if save_figs:
-		save_fig()
-		# for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
-  #   		for d in dirs:    
-  #   			if fnmatch.fnmatch(d, "sailing_simulation_results"):
-  #   				save_location = os.path.join(root, d)
-  #   				timestr = time.strftime('%Y-%m-%d--%H-%M-%S')
-  #   				plt.savefig(f'{save_location}/{timestr}/r{rudder_angle}_s{sail_angle}_tw{true_wind_polar}.pdf')
-
-
-
-	plt.show()
+		save_fig(fig_location, title)
+	else:
+		plt.show()
 
 if __name__ == '__main__': main()
 
