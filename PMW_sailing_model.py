@@ -709,7 +709,7 @@ def plot_boat(boatPos_pol,
 
 	boat = Transform2D(boat, global_origin, boatAngle, boatPos_car)
 
-	
+	#ax1.annotate(str(i), xy=pol2cart(data["position"][i]), xytext=pol2cart(data["position"][i]) + np.array([0.2,0.2]))#, xytext=(3, 1.5),
 	
 	plt.scatter(boatPos_car[x], boatPos_car[y], color='k')
 	plt.plot(boat[:,0], boat[:,1],lw=1, color='b') 
@@ -810,15 +810,15 @@ def draw_vectors(rudder, sail,
                    #[pos_car[x],          pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
                    #[COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
                    #[COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
-                   [pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
-                   [pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
+                   #[pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
+                   #[pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
                    [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
-                   [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
-                   #[pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
-                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
-                   [pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
+                   #[pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
+                   [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
+                   #[pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   #[pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
                    #[pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr'],
-                   [COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
+                   #[COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    [pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
                    [pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
                    #[COErudder[x]   , COErudder[y], Fr_moment_car[x],  Fr_moment_car[y], 'Fr_moment']
@@ -881,6 +881,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	# Fr_pol[0] -= boat_angle
 	# Fh_pol[0] -= boat_angle
 
+	# CONVERT EVERYTHING TO LOCAL FRAME OF REF
 	Fs_pol_LRF = np.array([Fs_pol[0]-boat_angle, Fs_pol[1]])
 	Fr_pol_LRF = np.array([Fr_pol[0]-boat_angle, Fr_pol[1]])
 	Fh_pol_LRF = np.array([Fh_pol[0]-boat_angle, Fh_pol[1]])
@@ -1200,7 +1201,7 @@ def param_solve(Z_state):
 def main(rudder_angle = pi/10 , 
 		 sail_angle = pi/2,
 		 true_wind_polar = np.array([pi + (pi/6), 5]),
-		 save_figs = True,
+		 save_figs = False,
 		 fig_location = save_location):
 
 	"""
@@ -1301,7 +1302,7 @@ def main(rudder_angle = pi/10 ,
 					w] 
 
 	Time = np.arange(0, 20, 1)
-	Time = np.arange(5)
+	Time = np.arange(3)
 
 	#sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 	data = {'position' : [],    'apparent_wind' : [],    
@@ -1365,7 +1366,16 @@ def main(rudder_angle = pi/10 ,
 
 		print()
 		print('saved_sail_force2', data['sail_force'][i])
-		print('heading', data['heading'][i])	
+		print('heading', data['heading'][i])
+
+		ax1.annotate(str(i), 
+		             xy=pol2cart(data["position"][i]), 
+		             xytext=pol2cart(data["position"][i]) + np.array([0.2,0.2]))
+
+		# ax1.annotate(str(i), xy=data["position"][i], xytext=data["position"][i] + np.array([0.2,0.2]))#, xytext=(3, 1.5),
+            #arrowprops=dict(facecolor='black', shrink=0.05),
+           # )
+
 
 		plot_boat(data["position"][i], 
 			      data["heading"][i], 
