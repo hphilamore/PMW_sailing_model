@@ -500,7 +500,7 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):
 		CD2 = CD1max + (CD2max - CD1max) * sin(deg2rad(ang))
 		#print('CD2', CD2)
 
-	if part == 'hull':
+	if part == 'hull' or part == 'rudder':
 		CL2 *= hull_drag_scale_factor #* 1.2
 		CD2 *= hull_drag_scale_factor #* 1.2	
 
@@ -577,11 +577,12 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 		cl.append(CL)
 		cd.append(CD)
 	#fig = plt.subplots()
-	if part == 'hull':
+	# if part == 'hull':
+	if part == 'rudder':
 		attack_a= rad2deg(attack_a)
 		plt.plot(attack_a, cl, label='lift '+ part)
 		plt.plot(attack_a, cd, label='drag '+ part)
-		plt.legend('upper center', bbox_to_anchor=(0.5,-0.1))
+		#plt.legend()
 		plt.title(part)
 		plt.xlim((0, 90))
 		plt.ylim(ymin=0)
@@ -816,8 +817,8 @@ def draw_vectors(rudder, sail,
                    #[pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],          
                    [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
                    #[pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
-                   #[pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
-                   #[pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr'],
+                   [pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
+                   [pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    #[COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    [pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
                    [pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
@@ -926,7 +927,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	#sway =  Fs_car[y] + Fh_car[y] #+ hull_side_resistance
 
 	# only consider force in boat frame x direction
-	F_car_thrust = F_surge_car #= np.array([F[x], 0.0]) # np.array([surge, 0.0])
+	F_car_thrust = F#F_surge_car #= np.array([F[x], 0.0]) # np.array([surge, 0.0])
 	# convertto polar coords
 	Fpol_thrust = cart2pol(F_car_thrust)
 
@@ -1247,7 +1248,7 @@ def main(rudder_angle = pi/10 ,
 
 	# aspect ratio
 	ARs = 4            # aspect ratio sail
-	ARr = 0.02            # aspect ratio rudder
+	ARr = 4            # aspect ratio rudder
 	ARh = 4            # aspect ratio hull
 
 	# chord
