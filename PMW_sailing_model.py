@@ -507,12 +507,12 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):
 		CL1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor
 		CD1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor * hull_pre_stall_drag_scale_factor
 
-	# if part == 'rudder':
-		# CL2 *= rudder_scale_factor #* 1.2
-		# CD2 *= rudder_scale_factor #* 1.2	
+	if part == 'rudder':
+		CL2 *= rudder_scale_factor #* 1.2
+		CD2 *= rudder_scale_factor #* 1.2	
 
-		# CL1 *= rudder_scale_factor
-		# CD1 *= rudder_scale_factor
+		CL1 *= rudder_scale_factor
+		CD1 *= rudder_scale_factor
 
 
 	if part == 'sail':
@@ -832,7 +832,7 @@ def draw_vectors(rudder, sail,
                    
                    [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
                    #[pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
-                   [pos_car[x]-boat_l/2   , pos_car[y], Fr_car[x],  Fr_car[y], 'Fr'],
+                   [COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    #[COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    [pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
                    [pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
