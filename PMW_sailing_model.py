@@ -1103,16 +1103,31 @@ def set_sail_angle():
 	"""
 	Adjusts the sail to optimal angle for maximum surge force 
 	"""
+	# global sa
+
+	# wind_angle = aw_pol[0]
+
+	# if 0 < wind_angle <= pi/2:
+	# 	sa = wind_angle - pi/12
+	# elif 3*pi/2 < wind_angle <= 2*pi:
+	# 	sa = wind_angle + pi/12
+	# else:
+	# 	sa = wind_angle - pi/2
+
 	global sa
 
-	wind_angle = aw_pol[0]
+	# apparent wind, LRF
+	aw_LRF = aw_pol[0] - theta
 
-	if 0 < wind_angle <= pi/2:
-		sa = wind_angle - pi/12
-	elif 3*pi/2 < wind_angle <= 2*pi:
-		sa = wind_angle + pi/12
+
+	if pi < aw_LRF <= pi*3/2:
+		sa = aw_LRF - pi - pi/12
+
+	elif pi < aw_LRF <= pi*3/2:
+		sa = aw_LRF + pi + pi/12
+
 	else:
-		sa = wind_angle - pi/2
+		sa = aw_LRF - pi/2
 
 
 # def dthdt(w, Fr_pol, rudder_angle, theta):
