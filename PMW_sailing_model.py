@@ -1145,7 +1145,7 @@ def save_fig(fig_location, title):
     				#plt.savefig(f'{save_location}/r{ra}_s{sa}_tw{tw_pol}.pdf')
 
 
-def param_solve(Z_state):
+def param_solve(Z_state, auto_adjust_sail):
 
 	# global sa, ra, vpol, pos_pol, aw_pol, theta, w
 	global vpol, aw_pol
@@ -1171,11 +1171,13 @@ def param_solve(Z_state):
 
 	print('twpol', tw_pol)
 	aw_pol = appWind(tw_pol, v_pol)
+	data["true_wind"].append(tw_pol)
 	data["apparent_wind"].append(aw_pol)
 
 	print(aw_pol)
 
-	set_sail_angle()
+	if auto_adjust_sail:
+		set_sail_angle()
 	print(sa)
 
 	vw_pol = np.array([four_quad(v_pol[0]+pi), 
@@ -1243,12 +1245,12 @@ steps = 10
 
 def main(rudder_angle = 0 , 
 		 sail_angle = pi/6,
+		 auto_adjust_sail = False,
 		 Time = np.arange(steps),
 		 # true_wind_polar = np.array([pi - (pi/6), 5]),
 		 true_wind_polar = [np.array([pi - (pi/6), 5])] * steps,
 		 save_figs = False,
 		 fig_location = save_location):
-
 
 	"""
 	Main program.
@@ -1361,7 +1363,7 @@ def main(rudder_angle = 0 ,
 
 
 	#sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
-	data = {'position' : [],    'apparent_wind' : [],    
+	data = {'position' : [],    'true_wind' : [],    'apparent_wind' : [],    
 	        'velocity' : [],    'angular_vel' : [],  'sail_area' : [],
 	        'sail_angle' : [],  'rudder_angle' : [], 'heading' : [],        
 	        'sail_lift' : [],   'rudder_lift' : [],  'hull_lift' : [], 
@@ -1394,7 +1396,7 @@ def main(rudder_angle = 0 ,
 		# print()
 
 		# find rates of change
-		state = param_solve(Z_init_state)
+		state = param_solve(Z_init_state, auto_adjust_sail)
 
 	    # update parameters
 		for i, (z, s) in enumerate(zip(Z_init_state, state)):
@@ -1455,8 +1457,8 @@ def main(rudder_angle = 0 ,
 			         data['sail_drag'][i],   data['rudder_drag'][i],  data['hull_drag'][i], 
 			         data['sail_force'][i],  data['rudder_force'][i], data['hull_force'][i],
 			         data['position'][i],    data["velocity"][i],
-			         tw_pol,                 data["apparent_wind"][i],
-			         data['surge_force'][i], data['sway_force'][i], data["rudder_moment_force"][i])
+			         data["true_wind"][i],   data["apparent_wind"][i],
+			         data['surge_force'][i], data['sway_force'][i],   data["rudder_moment_force"][i])
 
 	title = f'r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}'	
 	plt.title(title)	
