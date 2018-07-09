@@ -1147,7 +1147,8 @@ def save_fig(fig_location, title):
 
 def param_solve(Z_state):
 
-	global sa, ra, vpol, pos_pol, aw_pol, theta, w
+	# global sa, ra, vpol, pos_pol, aw_pol, theta, w
+	global vpol, aw_pol
 	"""
 	Solves the time dependent parameters:
 	- Boat velocity             (polar, global frame)
@@ -1168,6 +1169,7 @@ def param_solve(Z_state):
 	#theta =   Z_state[2]
 	w =       Z_state[1]#[3]
 
+	print('twpol', tw_pol)
 	aw_pol = appWind(tw_pol, v_pol)
 	data["apparent_wind"].append(aw_pol)
 
@@ -1237,11 +1239,16 @@ def param_solve(Z_state):
 
 # MAIN PROGRAM
 
+steps = 10
+
 def main(rudder_angle = 0 , 
 		 sail_angle = pi/6,
-		 true_wind_polar = np.array([pi - (pi/6), 5]),
+		 Time = np.arange(steps),
+		 # true_wind_polar = np.array([pi - (pi/6), 5]),
+		 true_wind_polar = [np.array([pi - (pi/6), 5])] * steps,
 		 save_figs = False,
 		 fig_location = save_location):
+
 
 	"""
 	Main program.
@@ -1258,7 +1265,7 @@ def main(rudder_angle = 0 ,
 	global hull_drag_scale_factor, hull_pre_stall_drag_scale_factor, hull_pre_stall_scale_factor, sail_drag_scale_factor, rudder_scale_factor
 	# initial conditions
 	global pos_car, pos_pol, v_car, v_pol, theta, w
-	global Z_init_state, data, Time
+	global Z_init_state, data
 	global tw_pol
 	global x, y
 
@@ -1324,7 +1331,7 @@ def main(rudder_angle = 0 ,
 	# tw_pol = np.array([pi + (pi/6), 5])   # true wind velocity (angle, magnitude), GRF
 	# tw_pol = np.array([2*pi - deg2rad(45) , 5])
 	# tw_pol = np.array([pi - deg2rad(25) , 5])
-	tw_pol = true_wind_polar #np.array([2*pi , 5])
+	# tw_pol = true_wind_polar #np.array([2*pi , 5])
 
 	ra = rudder_angle #pi/10                          # rudder angle, LRF (local reference frame)
 	sa = sail_angle   #pi/2                       # sail angle, LRF
@@ -1332,9 +1339,7 @@ def main(rudder_angle = 0 ,
 	hull_drag_scale_factor = 0.01
 	hull_pre_stall_drag_scale_factor = 0.1
 	hull_pre_stall_scale_factor = 8
-
 	rudder_scale_factor = 10
-
 	sail_drag_scale_factor = 0.1
 
 
@@ -1344,8 +1349,16 @@ def main(rudder_angle = 0 ,
 					#theta,
 					w] 
 
-	Time = np.arange(0, 20, 1)
-	Time = np.arange(10)
+	# Time = np.arange(0, 20, 1)
+	# Time = np.arange(10)
+
+	# check the number of wind coordinates given is the same as the number of timesteps
+	if len(true_wind_polar) != len(Time):
+		# make at least as many wind sata points as timesteps
+		true_wind_polar *= np.ceil(len(Time) / len(true_wind_polar))
+		# crop list to same length as no of time steps
+		true_wind_polar = true_wind_polar[:len(Time)]
+
 
 	#sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 	data = {'position' : [],    'apparent_wind' : [],    
@@ -1363,7 +1376,7 @@ def main(rudder_angle = 0 ,
 
 
 	# solve parameters at each Timestep
-	for t in Time:
+	for t, tw_pol in zip (Time, true_wind_polar):
 		print()
 		# data["sail_angle"].append(sa)
 		# data["rudder_angle"].append(ra)

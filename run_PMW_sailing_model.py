@@ -1,6 +1,7 @@
 from PMW_sailing_model import *
 from numpy import pi
 import os, time, fnmatch
+import random
 
 # main()
 
@@ -25,6 +26,9 @@ sail_angles = [0]
 # for twd in true_wind_dirs:
 # 	if 
 
+random_wind_dirs = true_wind_dirs
+random.shuffle(random_wind_dirs)
+
 
 for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
 		for d in dirs:    
@@ -43,12 +47,31 @@ for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
 # 			 		  save_figs = True,
 # 			 		  fig_location = save_location)
 
+# for r in rudder_angles:
+# 	for s in sail_angles:
+# 		# for twd in true_wind_dirs:
+# 		for twd in random_wind_dirs:
+# 			for tws in true_wind_speed:
+# 				main(rudder_angle = r , 
+# 			 		  sail_angle = s,
+# 			 		  true_wind_polar = np.array([twd, tws]),
+# 			 		  save_figs = True,
+# 			 		  fig_location = save_location)
+
+steps = 10
+
 for r in rudder_angles:
 	for s in sail_angles:
-		for twd in true_wind_dirs:
+		# for twd in true_wind_dirs:
+		for twd in random_wind_dirs:
 			for tws in true_wind_speed:
 				main(rudder_angle = r , 
 			 		  sail_angle = s,
-			 		  true_wind_polar = np.array([twd, tws]),
+			 		  Time = np.arange(steps),
+					  # true_wind_polar = np.array([pi - (pi/6), 5]),
+					  true_wind_polar = [np.array([pi - (pi/6), 5])] * steps,
 			 		  save_figs = True,
 			 		  fig_location = save_location)
+
+
+
