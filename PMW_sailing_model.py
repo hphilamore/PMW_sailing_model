@@ -25,6 +25,10 @@ Assumptions:
 - roll neglected for now
 
 TODO
+MOST IMPORTANTLY
+- sail drag is really low - increase this so that boat moves realistically under pure drag
+- introduce roll to deal with lateral force that curently accounted for using an arbitrary scale factor
+
 - plot sail area, chord, thicknes and max nornmal force coefficent should chnage dynamically with sail angle --> examine resulting drag coefficient
 - use odeint solver with empirical wind data as forcing function
 - only solve acceleration at each timestep - position can be derived
@@ -248,19 +252,19 @@ def attack_angle(part_angle, boat_angle, incident_vector_polar):
 		# round cosalpha to 15dp to deal with floating point error
 		cosalpha = round(cosalpha, 15)
 
-		print('part', U)
-		print('fluid', V)
-		print('cosalpha', cosalpha)
+		# print('part', U)
+		# print('fluid', V)
+		# print('cosalpha', cosalpha)
 		alpha = abs(np.arccos(cosalpha))
 
 		# find smallest of two possible angles
 		if alpha > pi/2:
 			alpha = pi - alpha
 
-		print('part_angle', part_angle)
-		print('boat_angle', boat_angle)
-		print('incident_vector_polar', incident_vector_polar)
-		print('alpha', alpha)
+		# print('part_angle', part_angle)
+		# print('boat_angle', boat_angle)
+		# print('incident_vector_polar', incident_vector_polar)
+		# print('alpha', alpha)
 
 
 
@@ -636,11 +640,11 @@ def sumAeroVectors(lift_pol, drag_pol, part):
 
 	f_pol = cart2pol(f_car)
 	f_pol_c = np.array([four_quad(f_pol[0]), f_pol[1]])
-	if part == 'rudder':
-		print("lift,drag", lift_car, drag_car)
-		print("lift,drag", f_car)
-		print("lift,drag", f_pol)
-		print("lift,drag", f_pol_c)
+	#if part == 'rudder':
+		# print("lift,drag", lift_car, drag_car)
+		# print("lift,drag", f_car)
+		# print("lift,drag", f_pol)
+		# print("lift,drag", f_pol_c)
 
 
 	return f_pol
@@ -764,7 +768,7 @@ def draw_vectors(rudder, sail,
 	Fr_car = pol2cart(Fr_pol)
 	Fh_car = pol2cart(Fh_pol)
 
-	print('vectorFs_pol', Fs_pol)
+	# print('vectorFs_pol', Fs_pol)
 	#print('theta', theta)
 	#print('vectorFs_car', Fs_car)
 
@@ -1095,6 +1099,21 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
 
 	return acc_ang
 
+def set_sail_angle():
+	"""
+	Adjusts the sail to optimal angle for maximum surge force 
+	"""
+	global sa
+
+	wind_angle = aw_pol[0]
+
+	if 0 < wind_angle <= pi/2:
+		sa = wind_angle - pi/12
+	elif 3*pi/2 < wind_angle <= 2*pi:
+		sa = wind_angle + pi/12
+	else:
+		sa = wind_angle - pi/2
+
 
 # def dthdt(w, Fr_pol, rudder_angle, theta):
 # 	"""
@@ -1151,6 +1170,11 @@ def param_solve(Z_state):
 
 	aw_pol = appWind(tw_pol, v_pol)
 	data["apparent_wind"].append(aw_pol)
+
+	print(aw_pol)
+
+	set_sail_angle()
+	print(sa)
 
 	vw_pol = np.array([four_quad(v_pol[0]+pi), 
 		                         v_pol[1]])
@@ -1321,7 +1345,7 @@ def main(rudder_angle = 0 ,
 					w] 
 
 	Time = np.arange(0, 20, 1)
-	Time = np.arange(5)
+	Time = np.arange(10)
 
 	#sail_angle, rudder_angle, sail_area, position, velocity, heading, angular_vel = [], [], [], [], [], [], []
 	data = {'position' : [],    'apparent_wind' : [],    
@@ -1383,9 +1407,9 @@ def main(rudder_angle = 0 ,
 
 		#print('boat position', data["position"][i])
 
-		print()
-		print('saved_sail_force2', data['sail_force'][i])
-		print('heading', data['heading'][i])
+		# print()
+		# print('saved_sail_force2', data['sail_force'][i])
+		# print('heading', data['heading'][i])
 
 		ax1.annotate(str(i), 
 		             xy=pol2cart(data["position"][i]), 
@@ -1409,9 +1433,9 @@ def main(rudder_angle = 0 ,
 			             data["heading"][i], 
 			             data["sail_angle"][i])
 
-		print()
-		print('saved_sail_force2', data['sail_force'][i])
-		print('heading', data['heading'][i])
+		# print()
+		# print('saved_sail_force2', data['sail_force'][i])
+		# print('heading', data['heading'][i])
 
 		draw_vectors(rudder, sail, 
 			         data['sail_lift'][i],   data['rudder_lift'][i],  data['hull_lift'][i],

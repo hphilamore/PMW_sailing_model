@@ -21,7 +21,7 @@ sail_angles = [pi/6]
 true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
 true_wind_speed = [5]
 
-# sail_angles = []
+sail_angles = [0]
 # for twd in true_wind_dirs:
 # 	if 
 
@@ -32,6 +32,16 @@ for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
 				save_location = os.path.join(root, d) + '/' + time.strftime('%Y-%m-%d--%H-%M-%S')
 				os.makedirs(save_location, exist_ok=True)
 
+
+# for r in rudder_angles:
+# 	for s in sail_angles:
+# 		for twd in true_wind_dirs:
+# 			for tws in true_wind_speed:
+# 				main(rudder_angle = r , 
+# 			 		  sail_angle = s,
+# 			 		  true_wind_polar = np.array([twd, tws]),
+# 			 		  save_figs = True,
+# 			 		  fig_location = save_location)
 
 for r in rudder_angles:
 	for s in sail_angles:
