@@ -1,7 +1,9 @@
 from PMW_sailing_model import *
+import numpy as np
 from numpy import pi
 import os, time, fnmatch
 import random
+import pandas as pd
 
 # set up a folder to store data
 for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
@@ -20,6 +22,11 @@ true_wind_speed = [5]
 sail_angles = [0]
 rudder_angles = [0]
 #sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
+
+# four_bit_sail_angles = pd.read_csv('actuator_data.csv')['end_to_end_angle']
+four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end_to_end_angle']),
+	                              np.array(pd.read_csv('actuator_data.csv')['end_to_end_angle']) + pi))
+print(four_bit_sail_angles)
 
 
 ### TEST CASES ###
@@ -79,6 +86,8 @@ for r in rudder_angles:
 		     auto_adjust_sail = True,
 		     Time = T,
 		     true_wind_polar = twp,
+		     binary_actuator = False,
+		     binary_angles = four_bit_sail_angles,
 		     save_figs = True,
 		     fig_location = save_location)
 

@@ -1099,7 +1099,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
 
 	return acc_ang
 
-def set_sail_angle():
+def set_sail_angle(binary_actuator, binary_angles):
 	"""
 	Adjusts the sail to optimal angle for maximum surge force 
 	"""
@@ -1129,6 +1129,13 @@ def set_sail_angle():
 	else:
 		sa = aw_LRF - pi/2
 
+	sa = four_quad(sa)
+
+	print('sa', sa)
+	# if sail is binary actuator, use closest avilable sail angle	
+	if binary_actuator:
+		sa = min(binary_angles, key=lambda x:abs(x-sa))
+	print('sa', sa)
 
 # def dthdt(w, Fr_pol, rudder_angle, theta):
 # 	"""
@@ -1160,7 +1167,10 @@ def save_fig(fig_location, title):
     				#plt.savefig(f'{save_location}/r{ra}_s{sa}_tw{tw_pol}.pdf')
 
 
-def param_solve(Z_state, auto_adjust_sail):
+def param_solve(Z_state, 
+	            auto_adjust_sail, 
+	            binary_actuator, 
+	            binary_angles):
 
 	# global sa, ra, vpol, pos_pol, aw_pol, theta, w
 	global vpol, aw_pol
@@ -1192,7 +1202,8 @@ def param_solve(Z_state, auto_adjust_sail):
 	print(aw_pol)
 
 	if auto_adjust_sail:
-		set_sail_angle()
+		set_sail_angle(binary_actuator, binary_angles)
+
 	print(sa)
 
 	vw_pol = np.array([four_quad(v_pol[0]+pi), 
@@ -1256,6 +1267,8 @@ def param_solve(Z_state, auto_adjust_sail):
 
 # MAIN PROGRAM
 
+bin_angles = [0.0, 0.19, 0.77, 0.86, 1.05, 1.05, 1.33, 1.57, 1.57, 1.81, 2.09, 2.09, 2.28, 2.38, 2.95, 3.14]
+
 steps = 10
 
 def main(rudder_angle = 0 , 
@@ -1264,6 +1277,8 @@ def main(rudder_angle = 0 ,
 		 Time = np.arange(steps),
 		 # true_wind_polar = np.array([pi - (pi/6), 5]),
 		 true_wind_polar = [np.array([pi - (pi/6), 5])] * steps,
+		 binary_actuator = False,
+		 binary_angles = bin_angles,
 		 save_figs = False,
 		 fig_location = save_location):
 
@@ -1411,7 +1426,7 @@ def main(rudder_angle = 0 ,
 		# print()
 
 		# find rates of change
-		state = param_solve(Z_init_state, auto_adjust_sail)
+		state = param_solve(Z_init_state, auto_adjust_sail, binary_actuator, binary_angles)
 
 	    # update parameters
 		for i, (z, s) in enumerate(zip(Z_init_state, state)):
