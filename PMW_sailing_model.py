@@ -1355,7 +1355,7 @@ def main(rudder_angle = 0 ,
 	# check the number of wind coordinates given is the same as the number of timesteps
 	if len(true_wind_polar) != len(Time):
 		# make at least as many wind sata points as timesteps
-		true_wind_polar *= np.ceil(len(Time) / len(true_wind_polar))
+		true_wind_polar *= int(np.ceil(len(Time) / len(true_wind_polar)))
 		# crop list to same length as no of time steps
 		true_wind_polar = true_wind_polar[:len(Time)]
 
