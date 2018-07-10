@@ -532,7 +532,12 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):
 	return CL, CD
 
 
-def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
+def aero_force(part, 
+	           force, 
+	           apparent_fluid_velocity, 
+	           part_angle, 
+	           boat_angle, 
+	           plot_coefficients):
 	"""
 	Returns lift or drag force as polar coordinates in GRF
 	Square of velocity neglected due to roll of body
@@ -585,24 +590,25 @@ def aero_force(part, force, apparent_fluid_velocity, part_angle, boat_angle):
 
 
 	# plot CL and CD across the whole attack angle range (0 --> pi rads)
-	attack_a = np.linspace(0, pi, 1000)
-	cl, cd = [], []
-	for a in attack_a:
-		#print("finding attack 1")
-		CL, CD = aero_coeffs(a, AR, c, t, CN1inf_max, CD0, part)  				 
-		cl.append(CL)
-		cd.append(CD)
-	#fig = plt.subplots()
-	# if part == 'hull':
-	#if part == 'rudder':
-	if part == 'sail':
-		attack_a= rad2deg(attack_a)
-		plt.plot(attack_a, cl, label='lift '+ part)
-		plt.plot(attack_a, cd, label='drag '+ part)
-		#plt.legend()
-		plt.title(part)
-		plt.xlim((0, 90))
-		plt.ylim(ymin=0)
+	if plot_coefficients:
+		attack_a = np.linspace(0, pi, 1000)
+		cl, cd = [], []
+		for a in attack_a:
+			#print("finding attack 1")
+			CL, CD = aero_coeffs(a, AR, c, t, CN1inf_max, CD0, part)  				 
+			cl.append(CL)
+			cd.append(CD)
+		#fig = plt.subplots()
+		# if part == 'hull':
+		#if part == 'rudder':
+		if part == 'sail':
+			attack_a= rad2deg(attack_a)
+			plt.plot(attack_a, cl, label='lift '+ part)
+			plt.plot(attack_a, cd, label='drag '+ part)
+			#plt.legend()
+			plt.title(part)
+			plt.xlim((0, 90))
+			plt.ylim(ymin=0)
 
 
 	# find lift and drag coefficent 
@@ -1170,7 +1176,8 @@ def save_fig(fig_location, title):
 def param_solve(Z_state, 
 	            auto_adjust_sail, 
 	            binary_actuator, 
-	            binary_angles):
+	            binary_angles,
+	            plot_force_coefficients):
 
 	# global sa, ra, vpol, pos_pol, aw_pol, theta, w
 	global vpol, aw_pol
@@ -1210,12 +1217,12 @@ def param_solve(Z_state,
 		                         v_pol[1]])
 	
 	# calculate lift and drag force
-	Ls_pol = aero_force(part='sail',   force='lift', apparent_fluid_velocity=aw_pol, part_angle=sa, boat_angle=theta)
-	Ds_pol = aero_force(part='sail',   force='drag', apparent_fluid_velocity=aw_pol, part_angle=sa, boat_angle=theta)
-	Lr_pol = aero_force(part='rudder', force='lift', apparent_fluid_velocity=vw_pol, part_angle=ra, boat_angle=theta)  
-	Dr_pol = aero_force(part='rudder', force='drag', apparent_fluid_velocity=vw_pol, part_angle=ra, boat_angle=theta) 
-	Lh_pol = aero_force(part='hull',   force='lift', apparent_fluid_velocity=vw_pol, part_angle=theta, boat_angle=theta)  
-	Dh_pol = aero_force(part='hull',   force='drag', apparent_fluid_velocity=vw_pol, part_angle=theta, boat_angle=theta) 
+	Ls_pol = aero_force(part='sail',   force='lift', apparent_fluid_velocity=aw_pol, part_angle=sa, boat_angle=theta, plot_coefficients=plot_force_coefficients)
+	Ds_pol = aero_force(part='sail',   force='drag', apparent_fluid_velocity=aw_pol, part_angle=sa, boat_angle=theta, plot_coefficients=plot_force_coefficients)
+	Lr_pol = aero_force(part='rudder', force='lift', apparent_fluid_velocity=vw_pol, part_angle=ra, boat_angle=theta, plot_coefficients=plot_force_coefficients)  
+	Dr_pol = aero_force(part='rudder', force='drag', apparent_fluid_velocity=vw_pol, part_angle=ra, boat_angle=theta, plot_coefficients=plot_force_coefficients) 
+	Lh_pol = aero_force(part='hull',   force='lift', apparent_fluid_velocity=vw_pol, part_angle=theta, boat_angle=theta, plot_coefficients=plot_force_coefficients)  
+	Dh_pol = aero_force(part='hull',   force='drag', apparent_fluid_velocity=vw_pol, part_angle=theta, boat_angle=theta, plot_coefficients=plot_force_coefficients) 
 
 
 	# resolve into forces on boat
@@ -1275,12 +1282,14 @@ def main(rudder_angle = 0 ,
 		 sail_angle = pi/6,
 		 auto_adjust_sail = False,
 		 Time = np.arange(steps),
+		 timestep = 1,
 		 # true_wind_polar = np.array([pi - (pi/6), 5]),
 		 true_wind_polar = [np.array([pi - (pi/6), 5])] * steps,
 		 binary_actuator = False,
 		 binary_angles = bin_angles,
 		 save_figs = False,
-		 fig_location = save_location):
+		 fig_location = save_location,
+		 plot_force_coefficients = True):
 
 	"""
 	Main program.
@@ -1426,7 +1435,11 @@ def main(rudder_angle = 0 ,
 		# print()
 
 		# find rates of change
-		state = param_solve(Z_init_state, auto_adjust_sail, binary_actuator, binary_angles)
+		state = param_solve(Z_init_state, 
+			                auto_adjust_sail, 
+			                binary_actuator, 
+			                binary_angles, 
+			                plot_force_coefficients)
 
 	    # update parameters
 		for i, (z, s) in enumerate(zip(Z_init_state, state)):
@@ -1490,7 +1503,8 @@ def main(rudder_angle = 0 ,
 			         data["true_wind"][i],   data["apparent_wind"][i],
 			         data['surge_force'][i], data['sway_force'][i],   data["rudder_moment_force"][i])
 
-	title = f'r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}'	
+	#title = f'r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}'	
+	title = f'timestep {timestep}'
 	plt.title(title)	
 
 	if save_figs:
