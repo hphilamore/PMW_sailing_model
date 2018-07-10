@@ -9,6 +9,7 @@ from scipy.interpolate import splrep
 from scipy.interpolate import splev
 import scipy.interpolate
 
+
 # set up a folder to store data
 for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
 		for d in dirs:    
@@ -18,34 +19,82 @@ for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
 
 
 
-# wind directions
-true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
-true_wind_speed = [5]
-
-
-# initial sail and rudder angles as list of cases
-sail_angles = [0]
-rudder_angles = [0]
-#sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
-
-
 # four_bit_sail_angles = pd.read_csv('actuator_data.csv')['end_to_end_angle']
 four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end_to_end_angle']),
 	                              np.array(pd.read_csv('actuator_data.csv')['end_to_end_angle']) + pi))
 
 
 
+"""
+
+MODE 1 : Systematically cycle through combination of each listed
+
+- wind direction
+- wind speed
+- sail angle (option to auto adjust to wind angle within program)
+- rudder angle 
+
+Sail angle used as starting angle where sail angle is auto-adjuested in program
+
+"""
+# wind directions
+true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
+true_wind_speed = [5]
+sail_angles = [0]
+rudder_angles = [0]
+#sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
+
+# points = 5
+
+# for twd in true_wind_dirs:
+# 	for tws in true_wind_speed:
+# 		for r in rudder_angles:
+# 			for s in sail_angles:
+# 				main(rudder_angle = s, 
+# 				     sail_angle = r,
+# 				     auto_adjust_sail = True,
+# 				     Time = np.arange(points),
+# 				     time_ticks = T_ticks,
+# 				     true_wind_polar = [np.array([twd, tws])] * points,
+# 				     binary_actuator = False,
+# 				     binary_angles = four_bit_sail_angles,
+# 				     save_figs = True,
+# 				     fig_location = save_location,
+# 				     plot_force_coefficients = False,
+# 				     weather_data_ID = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}')
+
+
+
+
+
+
+"""
+
+MODE 2 : Use a string of empirical or radomly generated wind values
+
+Systematically cycle through combination of each listed
+- sail angle 
+- rudder angle 
+
+(option to auto adjust to wind angle within program)
+
+Sail angle used as starting angle where sail angle is auto-adjuested in program
+
+"""
+
+sail_angles = [0]
+rudder_angles = [0]
 
 # empirically recorded wind data
 wdID = 'PaddyA'
 wdID = 'PaddyB'
-wdID = 'hillside'
+#wdID = 'hillside'
 #wdID = 'streamside'
 
-weather_data_streamside = pd.read_csv('weather_data_streamside_02-03-18_19-55_112cm.TXT', sep='\t')[['windspeed(m/s)' , 'windAngle(deg)']][725:1000]
-weather_data_hillside = pd.read_csv('weather_data_hillside_02-03-18_19-55.TXT', sep='\t')[['windspeed(m/s)' , 'windAngle(deg)']][725:1000]
-weather_data_paddyA = pd.read_csv('weather_data_paddy1_17-02-18_19-45_45cm.TXT', sep='\t')[['windspeed(m/s)' , 'windAngle(deg)']]#[0:10]
-weather_data_paddyB = pd.read_csv('weather_data_paddy1_17-02-18_18-45_45cm.TXT', sep='\t')[['windspeed(m/s)' , 'windAngle(deg)']]#[0:10]
+weather_data_streamside = pd.read_csv('weather_data_streamside_02-03-18_19-55_112cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]
+weather_data_hillside = pd.read_csv('weather_data_hillside_02-03-18_19-55.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]
+weather_data_paddyA = pd.read_csv('weather_data_paddy1_17-02-18_19-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]
+weather_data_paddyB = pd.read_csv('weather_data_paddy1_17-02-18_18-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]
 
 if wdID == 'PaddyA':
 	weather_data = weather_data_paddyA
@@ -55,8 +104,6 @@ elif wdID == 'hillside':
 	weather_data = weather_data_hillside
 elif wdID == 'streamside':
 	weather_data = weather_data_streamside
-
-
 
 
 ### TEST CASES ###
@@ -99,16 +146,16 @@ def random_wind_data(num_points=10):
 	return T, twp, T_ticks
 
 
-def cycle_wind_data():
-	"""
-	Systematially cycle through each wind speed and magnitude given in two lists
-	Timesteps generated to match number of points
-	"""
-	twp = [np.array([twd, tws]) for twd in true_wind_dirs for tws in true_wind_speed]
-	T = np.arange(len(twp))
-	timestep = 1
-	T_ticks = (T[0], T[-1], timestep)
-	return T, twp, T_ticks
+# def cycle_wind_data():
+# 	"""
+# 	Systematially cycle through each wind speed and magnitude given in two lists
+# 	Timesteps generated to match number of points
+# 	"""
+# 	twp = [np.array([twd, tws]) for twd in true_wind_dirs for tws in true_wind_speed]
+# 	T = np.arange(len(twp))
+# 	timestep = 1
+# 	T_ticks = (T[0], T[-1], timestep)
+# 	return T, twp, T_ticks
 
 
 def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
@@ -192,12 +239,13 @@ def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
 	plt.xlabel('time (secs')
 	plt.xticks(T, T_ticks)
 	plt.legend()
+	plt.savefig(f'{save_location}/wind_profile.pdf')
 	plt.show()
 
 	return T, twp, T_ticks
 
 
-T, twp, T_ticks = cycle_wind_data()
+# T, twp, T_ticks = cycle_wind_data()
 T, twp, T_ticks = random_wind_data()
 T, twp, T_ticks = empirical_data(weather_data, timestep=2, noise_sd=0.1, dp=slice(20,30))
 
@@ -216,6 +264,10 @@ for r in rudder_angles:
 		     fig_location = save_location,
 		     plot_force_coefficients = False,
 		     weather_data_ID = wdID)
+
+
+
+
 
 
 

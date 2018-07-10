@@ -855,7 +855,7 @@ def draw_vectors(rudder, sail,
 	#for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
 	for n, (V, c) in enumerate(zip(vectors, colors), 1):
 		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		quiver_scale = 50
+		quiver_scale = 50 #10
 		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
 		#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 		quiver_key_scale = quiver_scale/10#100
