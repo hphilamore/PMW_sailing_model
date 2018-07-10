@@ -25,65 +25,81 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
-"""
+def systematic_mode(num_points=5, binary=True):
+	"""
+	Systematically cycle through combination of each listed:
+		- wind direction
+		- wind speed
+		- sail angle (option to auto adjust to wind angle within program)
+		- rudder angle 
+	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
+	"""
+	# wind directions
+	true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
+	true_wind_speed = [5]
+	sail_angles = [0]
+	rudder_angles = [0]
+	#sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
 
-MODE 1 : Systematically cycle through combination of each listed
+	T = np.arange(num_points)
+	timestep = 1
+	T_ticks = (T[0], T[-1], timestep)
 
-- wind direction
-- wind speed
-- sail angle (option to auto adjust to wind angle within program)
-- rudder angle 
-
-Sail angle used as starting angle where sail angle is auto-adjuested in program
-
-"""
-# wind directions
-true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
-true_wind_speed = [5]
-sail_angles = [0]
-rudder_angles = [0]
-#sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
-
-# points = 5
-
-# for twd in true_wind_dirs:
-# 	for tws in true_wind_speed:
-# 		for r in rudder_angles:
-# 			for s in sail_angles:
-# 				main(rudder_angle = s, 
-# 				     sail_angle = r,
-# 				     auto_adjust_sail = True,
-# 				     Time = np.arange(points),
-# 				     time_ticks = T_ticks,
-# 				     true_wind_polar = [np.array([twd, tws])] * points,
-# 				     binary_actuator = False,
-# 				     binary_angles = four_bit_sail_angles,
-# 				     save_figs = True,
-# 				     fig_location = save_location,
-# 				     plot_force_coefficients = False,
-# 				     weather_data_ID = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}')
-
+	for twd in true_wind_dirs:
+		for tws in true_wind_speed:
+			for r in rudder_angles:
+				for s in sail_angles:
+					main(rudder_angle = s, 
+					     sail_angle = r,
+					     auto_adjust_sail = True,
+					     Time = T,
+					     time_ticks = T_ticks,
+					     true_wind_polar = [np.array([twd, tws])] * num_points,
+					     binary_actuator = binary,
+					     binary_angles = four_bit_sail_angles,
+					     save_figs = True,
+					     fig_location = save_location,
+					     plot_force_coefficients = False,
+					     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, ')
 
 
 
+def random_mode(num_points=5, binary=True):
+	"""
+	String of randomly generated wind values
+	Systematically cycle through combination of each listed:
+		- sail angle (option to auto adjust to wind angle within program)
+		- rudder angle 
+	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
+	"""
+	sail_angles = [0]
+	rudder_angles = [0]
+
+	angles = [random.uniform(0, 2*pi) for i in range(num_points)]
+	mags = [random.normalvariate(5, 2) for i in range(num_points)]
+	# angles = np.random.uniform(0, 2*pi, size=(num_points))
+	# mags = np.random.normal(5, 2, size=(num_points))
+	twp = [np.array([a, m]) for a, m in zip(angles, mags)]
+	T = np.arange(num_points)
+	timestep = 1
+	T_ticks = (T[0], T[-1], timestep)
+
+	for r in rudder_angles:
+		for s in sail_angles:
+			main(rudder_angle = s, 
+			     sail_angle = r,
+			     auto_adjust_sail = True,
+			     Time = T,
+			     time_ticks = T_ticks,
+			     true_wind_polar = twp,
+			     binary_actuator = binary,
+			     binary_angles = four_bit_sail_angles,
+			     save_figs = True,
+			     fig_location = save_location,
+			     plot_force_coefficients = False,
+			     output_plot_title = 'random, binary: {binary}')
 
 
-"""
-
-MODE 2 : Use a string of empirical or radomly generated wind values
-
-Systematically cycle through combination of each listed
-- sail angle 
-- rudder angle 
-
-(option to auto adjust to wind angle within program)
-
-Sail angle used as starting angle where sail angle is auto-adjuested in program
-
-"""
-
-sail_angles = [0]
-rudder_angles = [0]
 
 # empirically recorded wind data
 wdID = 'PaddyA'
@@ -91,31 +107,62 @@ wdID = 'PaddyB'
 #wdID = 'hillside'
 #wdID = 'streamside'
 
-weather_data_streamside = pd.read_csv('weather_data_streamside_02-03-18_19-55_112cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]
-weather_data_hillside = pd.read_csv('weather_data_hillside_02-03-18_19-55.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]
-weather_data_paddyA = pd.read_csv('weather_data_paddy1_17-02-18_19-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]
-weather_data_paddyB = pd.read_csv('weather_data_paddy1_17-02-18_18-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]
-
-if wdID == 'PaddyA':
-	weather_data = weather_data_paddyA
-elif wdID == 'PaddyB':
-	weather_data = weather_data_paddyB
-elif wdID == 'hillside':
-	weather_data = weather_data_hillside
-elif wdID == 'streamside':
-	weather_data = weather_data_streamside
-
-
-### TEST CASES ###
-def wind_data_repeated_per_timestep(angle=pi - (pi/6), mag=5):
+def empirical_mode(wdID, data_points=slice(20,30), binary=True):
 	"""
-	Fixed wind angle and magnitude
-	Wind data points repeated to match number of timesteps
+	String of empirically generated wind values
+	Systematically cycle through combination of each listed:
+		- sail angle (option to auto adjust to wind angle within program)
+		- rudder angle 
+	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
 	"""
-	steps = 10
-	T = np.arange(steps)
-	twp = [np.array([angle, mag])] * steps
-	return T, twp
+
+	sail_angles = [0]
+	rudder_angles = [0]
+
+	# weather_data_streamside = pd.read_csv('weather_data_streamside_02-03-18_19-55_112cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]
+	# weather_data_hillside = pd.read_csv('weather_data_hillside_02-03-18_19-55.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]
+	# weather_data_paddyA = pd.read_csv('weather_data_paddy1_17-02-18_19-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]
+	# weather_data_paddyB = pd.read_csv('weather_data_paddy1_17-02-18_18-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]
+
+	if wdID == 'PaddyA':
+		weather_data = pd.read_csv('weather_data_paddy1_17-02-18_19-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]# weather_data_paddyA
+	elif wdID == 'PaddyB':
+		weather_data = pd.read_csv('weather_data_paddy1_17-02-18_18-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]#weather_data_paddyB
+	elif wdID == 'hillside':
+		weather_data = pd.read_csv('weather_data_hillside_02-03-18_19-55.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]# weather_data_hillside
+	elif wdID == 'streamside':
+		weather_data = pd.read_csv('weather_data_streamside_02-03-18_19-55_112cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]# weather_data_streamside
+
+	T, twp, T_ticks = empirical_data(weather_data, timestep=2, noise_sd=0.1, dp=data_points)
+
+	for r in rudder_angles:
+		for s in sail_angles:
+			main(rudder_angle = s, 
+			     sail_angle = r,
+			     auto_adjust_sail = True,
+			     Time = T,
+			     time_ticks = T_ticks,
+			     true_wind_polar = twp,
+			     binary_actuator = binary,
+			     binary_angles = four_bit_sail_angles,
+			     save_figs = True,
+			     fig_location = save_location,
+			     plot_force_coefficients = False,
+			     output_plot_title = f'start: {T_ticks[0]}, end: {T_ticks[1]}, timestep: {T_ticks[2]}, weather data: {wdID}, binary: {binary}')
+
+
+# ### TEST CASES ###
+# def wind_data_repeated_per_timestep(angle=pi - (pi/6), mag=5):
+# 	"""
+# 	Fixed wind angle and magnitude
+# 	Wind data points repeated to match number of timesteps
+# 	"""
+# 	steps = 10
+# 	T = np.arange(steps)
+# 	twp = [np.array([angle, mag])] * steps
+# 	return T, twp
+
+
 
 
 # def random_wind_data():
@@ -130,20 +177,33 @@ def wind_data_repeated_per_timestep(angle=pi - (pi/6), mag=5):
 # 	return T, twp
 
 
-def random_wind_data(num_points=10):
-	"""
-	Randomly created wind data.
-	Timesteps generated to match number of points
-	"""
-	angles = [random.uniform(0, 2*pi) for i in range(num_points)]
-	mags = [random.normalvariate(5, 2) for i in range(num_points)]
-	# angles = np.random.uniform(0, 2*pi, size=(num_points))
-	# mags = np.random.normal(5, 2, size=(num_points))
-	twp = [np.array([a, m]) for a, m in zip(angles, mags)]
-	T = np.arange(len(twp))
-	timestep = 1
-	T_ticks = (T[0], T[-1], timestep)
-	return T, twp, T_ticks
+# def random_wind_data(num_points=10):
+# 	"""
+# 	Randomly created wind data.
+# 	Timesteps generated to match number of points
+# 	"""
+# 	angles = [random.uniform(0, 2*pi) for i in range(num_points)]
+# 	mags = [random.normalvariate(5, 2) for i in range(num_points)]
+# 	# angles = np.random.uniform(0, 2*pi, size=(num_points))
+# 	# mags = np.random.normal(5, 2, size=(num_points))
+# 	twp = [np.array([a, m]) for a, m in zip(angles, mags)]
+# 	T = np.arange(len(twp))
+# 	timestep = 1
+# 	T_ticks = (T[0], T[-1], timestep)
+# 	for r in rudder_angles:
+# 		for s in sail_angles:
+# 			main(rudder_angle = s, 
+# 			     sail_angle = r,
+# 			     auto_adjust_sail = True,
+# 			     Time = T,
+# 			     time_ticks = T_ticks,
+# 			     true_wind_polar = twp,
+# 			     binary_actuator = False,
+# 			     binary_angles = four_bit_sail_angles,
+# 			     save_figs = True,
+# 			     fig_location = save_location,
+# 			     plot_force_coefficients = False,
+# 			     weather_data_ID = wdID)
 
 
 # def cycle_wind_data():
@@ -245,26 +305,30 @@ def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
 	return T, twp, T_ticks
 
 
-# T, twp, T_ticks = cycle_wind_data()
-T, twp, T_ticks = random_wind_data()
-T, twp, T_ticks = empirical_data(weather_data, timestep=2, noise_sd=0.1, dp=slice(20,30))
+# # T, twp, T_ticks = cycle_wind_data()
+# T, twp, T_ticks = random_wind_data(num_points=5)
+# T, twp, T_ticks = empirical_data(weather_data, timestep=2, noise_sd=0.1, dp=slice(20,30))
 
 
-for r in rudder_angles:
-	for s in sail_angles:
-		main(rudder_angle = s, 
-		     sail_angle = r,
-		     auto_adjust_sail = True,
-		     Time = T,
-		     time_ticks = T_ticks,
-		     true_wind_polar = twp,
-		     binary_actuator = False,
-		     binary_angles = four_bit_sail_angles,
-		     save_figs = True,
-		     fig_location = save_location,
-		     plot_force_coefficients = False,
-		     weather_data_ID = wdID)
+# for r in rudder_angles:
+# 	for s in sail_angles:
+# 		main(rudder_angle = s, 
+# 		     sail_angle = r,
+# 		     auto_adjust_sail = True,
+# 		     Time = T,
+# 		     time_ticks = T_ticks,
+# 		     true_wind_polar = twp,
+# 		     binary_actuator = False,
+# 		     binary_angles = four_bit_sail_angles,
+# 		     save_figs = True,
+# 		     fig_location = save_location,
+# 		     plot_force_coefficients = False,
+# 		     weather_data_ID = wdID)
+empirical_mode('PaddyB', binary=False)
 
+#random_mode(binary=True)
+
+#systematic_mode(binary=True)
 
 
 

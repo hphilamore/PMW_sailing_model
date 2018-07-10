@@ -1129,7 +1129,7 @@ def set_sail_angle(binary_actuator, binary_angles):
 	if pi < aw_LRF <= pi*3/2:
 		sa = aw_LRF - pi - pi/12
 
-	elif pi < aw_LRF <= pi*3/2:
+	elif pi/2 < aw_LRF < pi:
 		sa = aw_LRF + pi + pi/12
 
 	else:
@@ -1290,7 +1290,7 @@ def main(rudder_angle = 0 ,
 		 save_figs = False,
 		 fig_location = save_location,
 		 plot_force_coefficients = True,
-		 weather_data_ID = None):
+		 output_plot_title = None):
 
 	"""
 	Main program.
@@ -1505,7 +1505,7 @@ def main(rudder_angle = 0 ,
 			         data['surge_force'][i], data['sway_force'][i],   data["rudder_moment_force"][i])
 
 	#title = f'r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}'	
-	title = f'start: {time_ticks[0]}, end: {time_ticks[1]}, timestep: {time_ticks[2]}, weather data: {weather_data_ID}'
+	title = output_plot_title
 	plt.title(title)	
 
 	if save_figs:
