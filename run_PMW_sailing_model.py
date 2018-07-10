@@ -22,6 +22,7 @@ for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
 true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
 true_wind_speed = [5]
 
+
 # initial sail and rudder angles as list of cases
 sail_angles = [0]
 rudder_angles = [0]
@@ -34,19 +35,26 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
+
 # empirically recorded wind data
+wdID = 'PaddyA'
+wdID = 'PaddyB'
+wdID = 'hillside'
+#wdID = 'streamside'
+
 weather_data_streamside = pd.read_csv('weather_data_streamside_02-03-18_19-55_112cm.TXT', sep='\t')[['windspeed(m/s)' , 'windAngle(deg)']][725:1000]
 weather_data_hillside = pd.read_csv('weather_data_hillside_02-03-18_19-55.TXT', sep='\t')[['windspeed(m/s)' , 'windAngle(deg)']][725:1000]
-#weather_data_streamside = weather_data_streamside[0:10]
-#weather_data_hillside = weather_data_hillside[0:10]
 weather_data_paddyA = pd.read_csv('weather_data_paddy1_17-02-18_19-45_45cm.TXT', sep='\t')[['windspeed(m/s)' , 'windAngle(deg)']]#[0:10]
 weather_data_paddyB = pd.read_csv('weather_data_paddy1_17-02-18_18-45_45cm.TXT', sep='\t')[['windspeed(m/s)' , 'windAngle(deg)']]#[0:10]
 
-
-weather_data = weather_data_paddyA
-weather_data = weather_data_paddyB
-weather_data = weather_data_hillside
-weather_data = weather_data_streamside
+if wdID == 'PaddyA':
+	weather_data = weather_data_paddyA
+elif wdID == 'PaddyB':
+	weather_data = weather_data_paddyB
+elif wdID == 'hillside':
+	weather_data = weather_data_hillside
+elif wdID == 'streamside':
+	weather_data = weather_data_streamside
 
 
 
@@ -86,7 +94,9 @@ def random_wind_data(num_points=10):
 	# mags = np.random.normal(5, 2, size=(num_points))
 	twp = [np.array([a, m]) for a, m in zip(angles, mags)]
 	T = np.arange(len(twp))
-	return T, twp, 1
+	timestep = 1
+	T_ticks = (T[0], T[-1], timestep)
+	return T, twp, T_ticks
 
 
 def cycle_wind_data():
@@ -96,9 +106,12 @@ def cycle_wind_data():
 	"""
 	twp = [np.array([twd, tws]) for twd in true_wind_dirs for tws in true_wind_speed]
 	T = np.arange(len(twp))
-	return T, twp, 1
+	timestep = 1
+	T_ticks = (T[0], T[-1], timestep)
+	return T, twp, T_ticks
 
-def empirical_data(df, freq=1, noise_sd=0.1, dp=slice(20,30)):
+
+def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
 	"""
 	Uses data frame constraucted from input empirical data to create an array of true wind values.
 	Interpolated points and noise as optional inputs.
@@ -108,22 +121,28 @@ def empirical_data(df, freq=1, noise_sd=0.1, dp=slice(20,30)):
 	freq : entries per minute (raw data = 1)
 	noise : 
 	"""
-	#entries = len(df)#['windspeed(m/s)'])
+
+	if timestep < 1:
+		raise ValueError("Timestep < 1 entered. Minimum timestep is 1 second.")
 
 	windSpeed = df['windspeed(m/s)']
 	windAngle = np.deg2rad(df['windAngle(deg)'])
 
-	# original time points, converted to (s)
-	time = np.linspace(0, len(df), len(df)) * 60
+	# original time points, converted mins to s
+	time = np.arange(len(df)) * 60
+	print('time', time)
+	print(len(time))
 	
 	# time points for interpolated data set
-	points = len(df) * freq
-	time_int = np.linspace(0, len(df), points)
+	num_points = len(time) * (60/timestep)
+	time_int = np.arange(time[0], time[-1]+1, timestep)
+	print('time_int', time_int)
+	print(len(time_int))
 	
-
-	# interpolated values
+	# order of interpolation data
 	order_poly = 3
 
+	# interpolation and added noise data
 	func = splrep(time, windSpeed, k=order_poly)
 	windSpeed_int = splev(time_int, func)
 	windSpeed_noisy = windSpeed_int + np.random.normal(0, noise_sd, size=windSpeed_int.shape)
@@ -132,6 +151,7 @@ def empirical_data(df, freq=1, noise_sd=0.1, dp=slice(20,30)):
 	windAngle_int = splev(time_int, func)
 	windAngle_noisy = windAngle_int + pi/2 * np.random.normal(0, noise_sd, size=windAngle_int.shape) # pi/2 * np.random.random(size=windAngle_int.shape)
 
+	# plot data to check
 	# fig1, ax1 = plt.subplots()	
 	# plt.plot(time_int, windSpeed_noisy, label=f'speed noisy')
 	# plt.plot(time_int, windSpeed_int, '--', label=f'speed interp')
@@ -149,73 +169,37 @@ def empirical_data(df, freq=1, noise_sd=0.1, dp=slice(20,30)):
 	# plt.legend()
 	#plt.show()
 
-
+	# organise into polar coordinates
 	twp = [np.array([twd, tws]) for twd, tws in zip(windAngle_noisy, windSpeed_noisy)]
-
-	# # integer series, length = number of time points
-	# #T = time_int
-	# T = np.arange(0, len(time_int))
-
-	# timestep (s)
-	ts = 60 / freq
 
 	# select a slice of the data
 	twp = twp[dp]
 	T = time_int[dp]
 
-	print(twp)
-	print(T)
-	print()
-
-	T_ticks = (min(T), max(T), ts)
-
-	
-
+	# save the limits and timestep used
+	T_ticks = np.arange(T[0], T[-1]+1, timestep)
+	print(T_ticks)
 
 	# integer series, length = number of time points
-	#T = time_int
 	T = np.arange(len(T))
 
-	print(twp)
-	print(T)
-
-
-
+	# plot to check
 	fig1, ax1 = plt.subplots()	
 	twp_ = np.stack(twp)
-	print(twp_)
-	plt.plot(T*ts, twp_[:, 0], label=f'angle')
-	plt.plot(T*ts, twp_[:, 1], label=f'speed')
+	# print(twp_)
+	plt.plot(T, twp_[:, 0], label=f'angle')
+	plt.plot(T, twp_[:, 1], label=f'speed')
 	plt.xlabel('time (secs')
+	plt.xticks(T, T_ticks)
 	plt.legend()
 	plt.show()
-
-	# select a section of the total time collected to display
-	# max_timestep = out_mins * freq
-	# twp = twp[ : max_timestep]
-	# T = T[ : max_timestep]
-
-
-	# print('T', T)
-	# print('twp', twp)
 
 	return T, twp, T_ticks
 
 
-
-
-
-
-
-T, twp, ts = cycle_wind_data()
-T, twp, ts = random_wind_data()
-T, twp, ts = empirical_data(weather_data, freq=30, noise_sd=0.1)
-
-# T = T[0:10]
-# twp = twp[0:10]
-
-print(T, twp)
-
+T, twp, T_ticks = cycle_wind_data()
+T, twp, T_ticks = random_wind_data()
+T, twp, T_ticks = empirical_data(weather_data, timestep=2, noise_sd=0.1, dp=slice(20,30))
 
 
 for r in rudder_angles:
@@ -224,13 +208,14 @@ for r in rudder_angles:
 		     sail_angle = r,
 		     auto_adjust_sail = True,
 		     Time = T,
-		     timestep = ts,
+		     time_ticks = T_ticks,
 		     true_wind_polar = twp,
 		     binary_actuator = False,
 		     binary_angles = four_bit_sail_angles,
 		     save_figs = True,
 		     fig_location = save_location,
-		     plot_force_coefficients = False)
+		     plot_force_coefficients = False,
+		     weather_data_ID = wdID)
 
 
 

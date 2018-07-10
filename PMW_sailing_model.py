@@ -1282,14 +1282,15 @@ def main(rudder_angle = 0 ,
 		 sail_angle = pi/6,
 		 auto_adjust_sail = False,
 		 Time = np.arange(steps),
-		 timestep = 1,
+		 time_ticks = np.arange(steps),
 		 # true_wind_polar = np.array([pi - (pi/6), 5]),
 		 true_wind_polar = [np.array([pi - (pi/6), 5])] * steps,
 		 binary_actuator = False,
 		 binary_angles = bin_angles,
 		 save_figs = False,
 		 fig_location = save_location,
-		 plot_force_coefficients = True):
+		 plot_force_coefficients = True,
+		 weather_data_ID = None):
 
 	"""
 	Main program.
@@ -1504,7 +1505,7 @@ def main(rudder_angle = 0 ,
 			         data['surge_force'][i], data['sway_force'][i],   data["rudder_moment_force"][i])
 
 	#title = f'r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}'	
-	title = f'timestep {timestep}'
+	title = f'start: {time_ticks[0]}, end: {time_ticks[1]}, timestep: {time_ticks[2]}, weather data: {weather_data_ID}'
 	plt.title(title)	
 
 	if save_figs:
