@@ -527,11 +527,18 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, ACL1_inf, CD0, part):
 		CD1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor * hull_pre_stall_drag_scale_factor
 
 	if part == 'rudder':
-		CL2 *= rudder_scale_factor * 0.05#* 0.05
-		CD2 *= rudder_scale_factor #* 1.2	
+		# CL2 *= rudder_scale_factor * 0.05#* 0.05
+		# CD2 *= rudder_scale_factor #* 1.2	
 
-		CL1 *= rudder_scale_factor * 2 * 0.05#* 0.05
-		CD1 *= rudder_scale_factor * 2 * 0.7
+		# CL1 *= rudder_scale_factor * 2 * 0.05#* 0.05
+		# CD1 *= rudder_scale_factor * 2 * 0.7
+
+		CL2 *= rudder_scale_factor #* 0.05#* 0.05
+		CD2 *= rudder_scale_factor * 1.2	
+
+		CL1 *= rudder_scale_factor * 2 #* 0.05#* 0.05
+		CD1 *= rudder_scale_factor * 2 #* 0.7
+
 
 
 	if part == 'sail':
@@ -862,22 +869,23 @@ def draw_vectors(rudder, sail,
 
 
 	vectors = [
-                   [COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
-                   [COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
+                   #[COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
+                   #[COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
                    #[pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
                    #[pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
                    #[pos_car[x], pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
                    [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
-                   #[pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
-                   #[pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],    
+                   [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
+                   [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],    
                    #[pos_car[x], pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
                    
-                   #[pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
                    #[pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
                    [COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    #[COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
-                   #[pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
-                   #[pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
+                   
+                   [pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
+                   [pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
                    [COErudder[x]   , COErudder[y], Fr_moment_car[x],  Fr_moment_car[y], 'Fr_moment']
                    ]
 
@@ -887,7 +895,7 @@ def draw_vectors(rudder, sail,
 	#for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
 	for n, (V, c) in enumerate(zip(vectors, colors), 1):
 		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		quiver_scale = 0.5#10 # 50 #10
+		quiver_scale = 10 # 50 #10
 		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
 		#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 		quiver_key_scale = quiver_scale/10#100
@@ -1089,13 +1097,8 @@ def inertial_moment(F_sway):
 
 # 	return cart2pol(v_car + dvdt_car_GRF)
 
+def rudder_moment(Fr_pol, rudder_angle, boat_angle):
 
-def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
-	"""
-	Angular velocity of the boat due to the rudder moment
-	"""
-	# First find rudder moment
-    # angle of attack of rudder force to rudder
 	angle = attack_angle(rudder_angle, boat_angle, Fr_pol, rudder=True)
 	print('angle of attack, rudder', angle)
 
@@ -1120,6 +1123,42 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
 	M_rudder = F_mag * rudder_ml * -np.sign(F_ang)
 	print('M_rudder', M_rudder)
 
+	return M_rudder
+
+
+
+def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
+	"""
+	Angular velocity of the boat due to the rudder moment
+	"""
+	# First find rudder moment
+    # angle of attack of rudder force to rudder
+	# angle = attack_angle(rudder_angle, boat_angle, Fr_pol, rudder=True)
+	# print('angle of attack, rudder', angle)
+
+	# # magnitude of force contributing to rudder moment about boat COG
+	# F_mag = Fr_pol[1] * sin(angle)
+	# print('Fr sin alpha', F_mag)
+	# # rudder force, LRF
+	# Fr_pol_LRF = np.array([four_quad(Fr_pol[0] - boat_angle), Fr_pol[1]])
+	# # angle indicating direction of rudder moment in boat LRF (i.e. pi/2 or -pi/2)
+	# F_ang = moment_force_angle(rudder_angle, Fr_pol, boat_angle)
+	# print('F_ang', F_ang)
+	
+	# # store rudder moment force for pltting
+	# data['rudder_moment_force'].append(np.array([F_ang + boat_angle, F_mag]))
+	# #print('rudder_momoent_force', np.array([F_ang, F_mag]))
+	# # moment arm length
+	# rudder_ml = (boat_l / 2 +    # distance rudder hinge to boat COG
+	# 	        (rudder_l / 2) * cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
+	
+	# # moment about boat COG
+	# # anti-clockwise is positive direction
+	# M_rudder = F_mag * rudder_ml * -np.sign(F_ang)
+	# print('M_rudder', M_rudder)
+
+	M_rudder = rudder_moment(Fr_pol, rudder_angle, boat_angle)
+
 	M_inertia = inertial_moment(F_sway_pol_LRF)
 	print('M_inertia', M_inertia)
 
@@ -1134,7 +1173,11 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
 
 
 	# second moment of area in yaw axis (Physics of Sailing, By John Kimball, P89)
-	Iyaw = (1/3) * mass * (boat_l/2)**2 * 5
+	# scaler = 5
+	# Iyaw = (1/3) * mass * (boat_l/2)**2 * scaler
+
+	# scaler = 5
+	Iyaw = (1/3) * mass * (boat_l/2)**2 #* scaler
 	#print(Iyaw)
 
 	# convert to acceleration by dividing moment by mass moment of area
@@ -1368,7 +1411,7 @@ def main(rudder_angle = 0 ,
 	rho_water = 1000;  # density water
 
 	# boat mass
-	mass = 10#10 # kg
+	mass = 50#10 # kg
 
 	# boat geometry
 	boat_l = 1         # boat length
@@ -1378,7 +1421,7 @@ def main(rudder_angle = 0 ,
 
 	# sail / rudder area
 	A_s = 0.64         # sail area
-	A_r = 0.05          # rudder area
+	A_r = 0.01# 0.02# 0.05          # rudder area
 	A_h = 0.1          # hull area 
 
 	# aspect ratio
