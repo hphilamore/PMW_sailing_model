@@ -25,7 +25,7 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
-def systematic_mode(num_points=5, binary=True):
+def systematic_mode(num_points=20, binary=True):
 	"""
 	Systematically cycle through combination of each listed:
 		- wind direction
@@ -38,7 +38,7 @@ def systematic_mode(num_points=5, binary=True):
 	true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
 	true_wind_speed = [5]
 	sail_angles = [0]
-	rudder_angles = [0]
+	rudder_angles = [pi/8]
 	#sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
 
 	T = np.arange(num_points)
@@ -49,8 +49,8 @@ def systematic_mode(num_points=5, binary=True):
 		for tws in true_wind_speed:
 			for r in rudder_angles:
 				for s in sail_angles:
-					main(rudder_angle = s, 
-					     sail_angle = r,
+					main(rudder_angle = r, 
+					     sail_angle = s,
 					     auto_adjust_sail = True,
 					     Time = T,
 					     time_ticks = T_ticks,
@@ -60,7 +60,7 @@ def systematic_mode(num_points=5, binary=True):
 					     save_figs = True,
 					     fig_location = save_location,
 					     plot_force_coefficients = False,
-					     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, ')
+					     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}')
 
 
 
@@ -86,8 +86,8 @@ def random_mode(num_points=5, binary=True):
 
 	for r in rudder_angles:
 		for s in sail_angles:
-			main(rudder_angle = s, 
-			     sail_angle = r,
+			main(rudder_angle = r, 
+			     sail_angle = s,
 			     auto_adjust_sail = True,
 			     Time = T,
 			     time_ticks = T_ticks,
@@ -137,8 +137,8 @@ def empirical_mode(wdID, data_points=slice(20,30), binary=True):
 
 	for r in rudder_angles:
 		for s in sail_angles:
-			main(rudder_angle = s, 
-			     sail_angle = r,
+			main(rudder_angle = r, 
+			     sail_angle = s,
 			     auto_adjust_sail = True,
 			     Time = T,
 			     time_ticks = T_ticks,
@@ -324,11 +324,11 @@ def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
 # 		     fig_location = save_location,
 # 		     plot_force_coefficients = False,
 # 		     weather_data_ID = wdID)
-empirical_mode('PaddyB', binary=False)
+#empirical_mode('PaddyB', binary=False)
 
 #random_mode(binary=True)
 
-#systematic_mode(binary=True)
+systematic_mode(binary=True)
 
 
 
