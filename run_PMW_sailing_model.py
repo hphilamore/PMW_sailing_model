@@ -25,7 +25,7 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
-def systematic_mode(num_points=20, binary=True):
+def systematic_mode(num_points=10, binary=False):
 	"""
 	Systematically cycle through combination of each listed:
 		- wind direction
@@ -46,6 +46,7 @@ def systematic_mode(num_points=20, binary=True):
 	T_ticks = (T[0], T[-1], timestep)
 
 	for twd in true_wind_dirs:
+		print('WIND DIR =', twd)
 		for tws in true_wind_speed:
 			for r in rudder_angles:
 				for s in sail_angles:
@@ -57,7 +58,7 @@ def systematic_mode(num_points=20, binary=True):
 					     true_wind_polar = [np.array([twd, tws])] * num_points,
 					     binary_actuator = binary,
 					     binary_angles = four_bit_sail_angles,
-					     save_figs = True,
+					     save_figs = False,#True,
 					     fig_location = save_location,
 					     plot_force_coefficients = False,
 					     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}')
@@ -73,7 +74,7 @@ def random_mode(num_points=5, binary=True):
 	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
 	"""
 	sail_angles = [0]
-	rudder_angles = [0]
+	rudder_angles = [pi/8]
 
 	angles = [random.uniform(0, 2*pi) for i in range(num_points)]
 	mags = [random.normalvariate(5, 2) for i in range(num_points)]

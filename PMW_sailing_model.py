@@ -217,7 +217,7 @@ def appWind(tw_pol, v_pol):
 
 
 
-def attack_angle(part_angle, boat_angle, incident_vector_polar):
+def attack_angle(part_angle, boat_angle, incident_vector_polar, rudder=False):
 	"""
 	Finds the angle of attack between:
 	- a surface (e.g. sail, hull, rudder)
@@ -231,17 +231,28 @@ def attack_angle(part_angle, boat_angle, incident_vector_polar):
 	if V_pol[1] == 0:       # if fluid (i.e. boat) not moving
 		alpha = 0 		    # angle of attack defaults to 0
 
-	else:	
+	else:		
+		if rudder:
+			print('part_angle', part_angle)
+			print('boat_angle', boat_angle)
 
 		# convert angles to global frame
 		part_angle += boat_angle
+		if rudder:
+			print('global part angle', part_angle)
 
 		# check angle still expressed in 4 quadrants
 		part_angle = four_quad(part_angle)
+		if rudder:
+			print('four_quad part angle', part_angle)
 
 		# convert angles to cartesian
 		part_car = pol2cart([part_angle, 1])
-		v_fluid_car = pol2cart(V_pol)
+		#v_fluid_car = pol2cart(V_pol)
+		v_fluid_car = pol2cart(np.array([V_pol[0], 1]))
+		if rudder:
+			print('part car', part_car)
+			print('fluid car', v_fluid_car)
 
 
 		# use dot product to find angle cosine
@@ -251,11 +262,15 @@ def attack_angle(part_angle, boat_angle, incident_vector_polar):
 
 		# round cosalpha to 15dp to deal with floating point error
 		cosalpha = round(cosalpha, 15)
+		if rudder:
+			print('cosalpha', cosalpha)
 
 		# print('part', U)
 		# print('fluid', V)
 		# print('cosalpha', cosalpha)
 		alpha = abs(np.arccos(cosalpha))
+		if rudder:
+			print('alpha', alpha)
 
 		# find smallest of two possible angles
 		if alpha > pi/2:
@@ -412,7 +427,7 @@ def moment_force_angle(part_angle, incident_vector_polar, boat_angle):
 # 	# la = four_quad(la)
 # 	return la 
 
-def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):  
+def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, ACL1_inf, CD0, part):  
 	"""
 	Computes the lift and drag coefficient for a given angle of attack.
 	Considers pre and post stall condition up to angle of attack = 90 degrees to incident surface
@@ -429,7 +444,7 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):
 	# empirical data (Fage and Johansen, 1876)
 	# α = angle of attack
 	A0 = 0               # α, where CL = 0, 
-	ACL1_inf = 9         # α at max pre-stall lift (deg), empirical data (Fage and Johansen, 1876)
+	#ACL1_inf = 9         # α at max pre-stall lift (deg), empirical data (Fage and Johansen, 1876)
 	ACD1_inf = ACL1_inf  # α at max pre-stall drag (deg)
 	CL1inf_max = cos(deg2rad(ACL1_inf)) * CN1inf_max      # maximum pre-stall lift coefficient; (i.e at α = ACL1)
 	CD1inf_max = sin(deg2rad(ACL1_inf)) * CN1inf_max       # maximum pre-stall drag coefficient; (i.e at α = ACD1)
@@ -456,7 +471,7 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):
 	if a >= A0:
 		CL1 = S1 * (a - A0) - RCL1 * ((a - A0)/(ACL1 - A0))**N1
 	else: # a < A0
-		CL1 = S1 * (a - A0) + RCL1 * ((a - A0)/(ACL1 - A0))**N1
+		CL1 = S1 * (a - A0) + RCL1 * ((a - A0)/(ACL1 - A0))**N1   # inverts solution
 
 
 	# Pre-stall drag
@@ -512,11 +527,11 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, CD0, part):
 		CD1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor * hull_pre_stall_drag_scale_factor
 
 	if part == 'rudder':
-		CL2 *= rudder_scale_factor #* 1.2
+		CL2 *= rudder_scale_factor * 0.05#* 0.05
 		CD2 *= rudder_scale_factor #* 1.2	
 
-		CL1 *= rudder_scale_factor
-		CD1 *= rudder_scale_factor
+		CL1 *= rudder_scale_factor * 2 * 0.05#* 0.05
+		CD1 *= rudder_scale_factor * 2 * 0.7
 
 
 	if part == 'sail':
@@ -551,6 +566,7 @@ def aero_force(part,
 	    AR = ARs # aspect ratio
 	    A = A_s  # area
 	    CN1inf_max = CN1inf_s_max
+	    ACL1_inf = ACL1_inf_s
 	    CD0 = CD0_s
 	    c = c_s
 	    t = t_s
@@ -563,6 +579,7 @@ def aero_force(part,
 	    AR = ARr  # aspect ratio
 	    A = A_r   # area
 	    CN1inf_max = CN1inf_r_max
+	    ACL1_inf = ACL1_inf_r
 	    CD0 = CD0_r
 	    c = c_r
 	    t = t_r
@@ -575,6 +592,7 @@ def aero_force(part,
 		AR = ARh  # aspect ratio
 		A = A_h   # area
 		CN1inf_max = CN1inf_h_max
+		ACL1_inf = ACL1_inf_h
 		CD0 = CD0_h
 		c = c_h
 		t = t_h
@@ -595,13 +613,13 @@ def aero_force(part,
 		cl, cd = [], []
 		for a in attack_a:
 			#print("finding attack 1")
-			CL, CD = aero_coeffs(a, AR, c, t, CN1inf_max, CD0, part)  				 
+			CL, CD = aero_coeffs(a, AR, c, t, CN1inf_max, ACL1_inf, CD0, part)  				 
 			cl.append(CL)
 			cd.append(CD)
 		#fig = plt.subplots()
 		# if part == 'hull':
 		#if part == 'rudder':
-		if part == 'sail':
+		if part == 'rudder':
 			attack_a= rad2deg(attack_a)
 			plt.plot(attack_a, cl, label='lift '+ part)
 			plt.plot(attack_a, cd, label='drag '+ part)
@@ -613,7 +631,7 @@ def aero_force(part,
 
 	# find lift and drag coefficent 
 	#print("finding attack 2")
-	CL, CD = aero_coeffs(alpha, AR, c, t, CN1inf_max, CD0, part)
+	CL, CD = aero_coeffs(alpha, AR, c, t, CN1inf_max, ACL1_inf, CD0, part)
 
 	if force == 'lift':
 		C = CL
@@ -629,8 +647,22 @@ def aero_force(part,
 		angle = four_quad(V_pol[0])
 		#angle = V_pol[0]
 
-	force = 0.5 * rho * A * V_pol[1]**2 * C		
-	return np.array([angle, force])
+	
+
+
+	Force = 0.5 * rho * A * V_pol[1]**2 * C	
+
+	if part =='rudder':
+		if force == 'lift':
+			print('alpha=', np.rad2deg(alpha), ' CL=', C, ' lift=', Force)
+		else:
+			print('alpha=', np.rad2deg(alpha), ' CD=', C, ' drag=', Force)
+
+
+
+
+
+	return np.array([angle, Force])
 
 
 def sumAeroVectors(lift_pol, drag_pol, part):
@@ -830,22 +862,22 @@ def draw_vectors(rudder, sail,
 
 
 	vectors = [
-                   #[COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
-                   #[COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
+                   [COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
+                   [COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
                    #[pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
                    #[pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
-                   [pos_car[x], pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
+                   #[pos_car[x], pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
                    [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'], # sail lift   
-                   [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
-                   [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],    
-                   [pos_car[x], pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
+                   #[pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
+                   #[pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],    
+                   #[pos_car[x], pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
                    
-                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   #[pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
                    #[pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
                    [COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    #[COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
-                   [pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
-                   [pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
+                   #[pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
+                   #[pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
                    [COErudder[x]   , COErudder[y], Fr_moment_car[x],  Fr_moment_car[y], 'Fr_moment']
                    ]
 
@@ -855,7 +887,7 @@ def draw_vectors(rudder, sail,
 	#for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
 	for n, (V, c) in enumerate(zip(vectors, colors), 1):
 		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		quiver_scale = 50 #10
+		quiver_scale = 0.5#10 # 50 #10
 		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
 		#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 		quiver_key_scale = quiver_scale/10#100
@@ -1064,14 +1096,18 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
 	"""
 	# First find rudder moment
     # angle of attack of rudder force to rudder
-	angle = attack_angle(rudder_angle, boat_angle, Fr_pol)
+	angle = attack_angle(rudder_angle, boat_angle, Fr_pol, rudder=True)
+	print('angle of attack, rudder', angle)
+
 	# magnitude of force contributing to rudder moment about boat COG
 	F_mag = Fr_pol[1] * sin(angle)
+	print('Fr sin alpha', F_mag)
 	# rudder force, LRF
 	Fr_pol_LRF = np.array([four_quad(Fr_pol[0] - boat_angle), Fr_pol[1]])
-	# angle indication direction of rudder moment in boat LRF (i.e. pi/2 or -pi/2)
+	# angle indicating direction of rudder moment in boat LRF (i.e. pi/2 or -pi/2)
 	F_ang = moment_force_angle(rudder_angle, Fr_pol, boat_angle)
 	print('F_ang', F_ang)
+	
 	# store rudder moment force for pltting
 	data['rudder_moment_force'].append(np.array([F_ang + boat_angle, F_mag]))
 	#print('rudder_momoent_force', np.array([F_ang, F_mag]))
@@ -1082,13 +1118,19 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
 	# moment about boat COG
 	# anti-clockwise is positive direction
 	M_rudder = F_mag * rudder_ml * -np.sign(F_ang)
+	print('M_rudder', M_rudder)
 
 	M_inertia = inertial_moment(F_sway_pol_LRF)
+	print('M_inertia', M_inertia)
 
-	M = M_rudder + M_inertia
+	
+	M = M_rudder #+ M_inertia
+	print(M)
+	print(np.rad2deg(M))
+	print()
 
-	print('m_rudder', M_rudder)
-	print('m inertia', M_inertia)
+	# print('m_rudder', M_rudder)
+	# print('m inertia', M_inertia)
 
 
 	# second moment of area in yaw axis (Physics of Sailing, By John Kimball, P89)
@@ -1096,7 +1138,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, F_sway_pol_LRF):
 	#print(Iyaw)
 
 	# convert to acceleration by dividing moment by mass moment of area
-	acc_ang = M_rudder / Iyaw
+	acc_ang = M / Iyaw
 
 
 
@@ -1137,11 +1179,11 @@ def set_sail_angle(binary_actuator, binary_angles):
 
 	sa = four_quad(sa)
 
-	print('sa', sa)
+	#print('sa', sa)
 	# if sail is binary actuator, use closest avilable sail angle	
 	if binary_actuator:
 		sa = min(binary_angles, key=lambda x:abs(x-sa))
-	print('sa', sa)
+	#print('sa', sa)
 
 # def dthdt(w, Fr_pol, rudder_angle, theta):
 # 	"""
@@ -1201,17 +1243,17 @@ def param_solve(Z_state,
 	#theta =   Z_state[2]
 	w =       Z_state[1]#[3]
 
-	print('twpol', tw_pol)
+	#print('twpol', tw_pol)
 	aw_pol = appWind(tw_pol, v_pol)
 	data["true_wind"].append(tw_pol)
 	data["apparent_wind"].append(aw_pol)
 
-	print(aw_pol)
+	#print(aw_pol)
 
 	if auto_adjust_sail:
 		set_sail_angle(binary_actuator, binary_angles)
 
-	print(sa)
+	#print(sa)
 
 	vw_pol = np.array([four_quad(v_pol[0]+pi), 
 		                         v_pol[1]])
@@ -1224,11 +1266,15 @@ def param_solve(Z_state,
 	Lh_pol = aero_force(part='hull',   force='lift', apparent_fluid_velocity=vw_pol, part_angle=theta, boat_angle=theta, plot_coefficients=plot_force_coefficients)  
 	Dh_pol = aero_force(part='hull',   force='drag', apparent_fluid_velocity=vw_pol, part_angle=theta, boat_angle=theta, plot_coefficients=plot_force_coefficients) 
 
+	print('rudder_lift', pol2cart(Lr_pol))
+	print('rudder_drag', pol2cart(Dr_pol))
+
 
 	# resolve into forces on boat
 	Fs_pol = sumAeroVectors(Ls_pol, Ds_pol, 'sail')  
 	Fr_pol = sumAeroVectors(Lr_pol, Dr_pol, 'rudder')
-	print('saved_rudder_force', Fr_pol)
+	print('rudder_force', pol2cart(Fr_pol))
+	#print('saved_rudder_force', Fr_pol)
 	
 	#print()
 	#print('Fr_pol', Fr_pol)
@@ -1252,7 +1298,7 @@ def param_solve(Z_state,
 	# print(data['sail_force'][-1])
 	# print()
 	data['rudder_force'].append(Fr_pol)
-	print(data['rudder_force'][-1])
+	#print(data['rudder_force'][-1])
 	#print()
 	data['hull_force'].append(Fh_pol)
 
@@ -1303,7 +1349,9 @@ def main(rudder_angle = 0 ,
 	global mass, boat_l, boat_w, rudder_l, sail_l
 	global A_s, A_r, A_h, ARs, ARr, ARh
 	global c_s, c_r, c_h, t_s, t_r, t_h, ra, sa
-	global CN1inf_s_max, CN1inf_r_max, CN1inf_h_max, CN1inf_s_min, CN1inf_r_min, CN1inf_h_min, CD0_s, CD0_r, CD0_h
+	global CN1inf_s_max, CN1inf_r_max, CN1inf_h_max, CN1inf_s_min, CN1inf_r_min, CN1inf_h_min
+	global CD0_s, CD0_r, CD0_h
+	global ACL1_inf_s, ACL1_inf_r, ACL1_inf_h
 	global hull_drag_scale_factor, hull_pre_stall_drag_scale_factor, hull_pre_stall_scale_factor, sail_drag_scale_factor, rudder_scale_factor
 	# initial conditions
 	global pos_car, pos_pol, v_car, v_pol, theta, w
@@ -1357,6 +1405,10 @@ def main(rudder_angle = 0 ,
 	CN1inf_s_min = 0 # empirical data from Johannsen = 0
 	CN1inf_r_min = 0
 	CN1inf_h_min = 0
+
+	ACL1_inf_s = 9         # α at max pre-stall lift (deg), empirical data (Fage and Johansen, 1876)
+	ACL1_inf_r = 45         # α at max pre-stall lift (deg), empirical data (Fage and Johansen, 1876)
+	ACL1_inf_h = 9         # α at max pre-stall lift (deg), empirical data (Fage and Johansen, 1876)
 
 	# Minimum drag coefficient (i.e. CD at angle of attack = A0) for an infinite foil
 	CD0_r = 0
@@ -1419,7 +1471,8 @@ def main(rudder_angle = 0 ,
 
 	# solve parameters at each Timestep
 	for t, tw_pol in zip (Time, true_wind_polar):
-		print()
+		print(t)
+		#print()
 		# data["sail_angle"].append(sa)
 		# data["rudder_angle"].append(ra)
 		#print('boat_pos', pol2cart(pos_pol))#Z_init_state[0]))
