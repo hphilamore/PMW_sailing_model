@@ -1099,63 +1099,63 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 # 	return cart2pol(v_car + dvdt_car_GRF)
 
-def inertial_moment(Fh_pol, boat_angle):
+# def inertial_moment(Fh_pol, boat_angle):
 
-	angle = attack_angle(boat_angle, boat_angle, Fh_pol, rudder=True)
-	print('angle of attack, boat', angle)
+# 	angle = attack_angle(boat_angle, boat_angle, Fh_pol, rudder=True)
+# 	print('angle of attack, boat', angle)
 
-	# magnitude of force contributing to rudder moment about boat COG
-	F_mag = Fh_pol[1] * sin(angle)
-	print('Fr sin alpha', F_mag)
-	# rudder force, LRF
-	Fh_pol_LRF = np.array([four_quad(Fh_pol[0] - boat_angle), Fh_pol[1]])
-	# angle indicating direction of rudder moment in boat LRF (i.e. pi/2 or -pi/2)
-	F_ang = moment_force_angle(boat_angle, Fh_pol, boat_angle)
-	print('F_ang', F_ang)
+# 	# magnitude of force contributing to rudder moment about boat COG
+# 	F_mag = Fh_pol[1] * sin(angle)
+# 	print('Fr sin alpha', F_mag)
+# 	# rudder force, LRF
+# 	Fh_pol_LRF = np.array([four_quad(Fh_pol[0] - boat_angle), Fh_pol[1]])
+# 	# angle indicating direction of rudder moment in boat LRF (i.e. pi/2 or -pi/2)
+# 	F_ang = moment_force_angle(boat_angle, Fh_pol, boat_angle)
+# 	print('F_ang', F_ang)
 	
-	# store hull moment force for pltting
-	data['hull_moment_force'].append(np.array([F_ang + boat_angle, F_mag]))
-	#print('rudder_momoent_force', np.array([F_ang, F_mag]))
+# 	# store hull moment force for pltting
+# 	data['hull_moment_force'].append(np.array([F_ang + boat_angle, F_mag]))
+# 	#print('rudder_momoent_force', np.array([F_ang, F_mag]))
 
-	# moment arm length
-	moment_arm_l = 0.1#(boat_l / 2 +    # distance rudder hinge to boat COG
-		              #rudder_l / 2) * cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
+# 	# moment arm length
+# 	moment_arm_l = 0.1#(boat_l / 2 +    # distance rudder hinge to boat COG
+# 		              #rudder_l / 2) * cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
 	
-	# moment about boat COG
-	# anti-clockwise is positive direction
-	M_inertial = F_mag * moment_arm_l * -np.sign(F_ang)
+# 	# moment about boat COG
+# 	# anti-clockwise is positive direction
+# 	M_inertial = F_mag * moment_arm_l * -np.sign(F_ang)
 
-	#print('M_inertial', M_inertial)
+# 	#print('M_inertial', M_inertial)
 
-	return M_inertial
+# 	return M_inertial
 
-def rudder_moment(Fr_pol, rudder_angle, boat_angle):
+# def rudder_moment(Fr_pol, rudder_angle, boat_angle):
 
-	angle = attack_angle(rudder_angle, boat_angle, Fr_pol)#, rudder=True)
-	print('angle of attack, rudder', angle)
+# 	angle = attack_angle(rudder_angle, boat_angle, Fr_pol)#, rudder=True)
+# 	print('angle of attack, rudder', angle)
 
-	# magnitude of force contributing to rudder moment about boat COG
-	F_mag = Fr_pol[1] * sin(angle)
-	print('Fr sin alpha', F_mag)
-	# rudder force, LRF
-	Fr_pol_LRF = np.array([four_quad(Fr_pol[0] - boat_angle), Fr_pol[1]])
-	# angle indicating direction of rudder moment in boat LRF (i.e. pi/2 or -pi/2)
-	F_ang = moment_force_angle(rudder_angle, Fr_pol, boat_angle)
-	print('F_ang', F_ang)
+# 	# magnitude of force contributing to rudder moment about boat COG
+# 	F_mag = Fr_pol[1] * sin(angle)
+# 	print('Fr sin alpha', F_mag)
+# 	# rudder force, LRF
+# 	Fr_pol_LRF = np.array([four_quad(Fr_pol[0] - boat_angle), Fr_pol[1]])
+# 	# angle indicating direction of rudder moment in boat LRF (i.e. pi/2 or -pi/2)
+# 	F_ang = moment_force_angle(rudder_angle, Fr_pol, boat_angle)
+# 	print('F_ang', F_ang)
 	
-	# store rudder moment force for pltting
-	data['rudder_moment_force'].append(np.array([F_ang + boat_angle, F_mag]))
-	#print('rudder_momoent_force', np.array([F_ang, F_mag]))
-	# moment arm length
-	rudder_ml = (boat_l / 2 +    # distance rudder hinge to boat COG
-		        (rudder_l / 2) * cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
+# 	# store rudder moment force for pltting
+# 	data['rudder_moment_force'].append(np.array([F_ang + boat_angle, F_mag]))
+# 	#print('rudder_momoent_force', np.array([F_ang, F_mag]))
+# 	# moment arm length
+# 	rudder_ml = (boat_l / 2 +    # distance rudder hinge to boat COG
+# 		        (rudder_l / 2) * cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
 	
-	# moment about boat COG
-	# anti-clockwise is positive direction
-	M_rudder = F_mag * rudder_ml * -np.sign(F_ang)
-	#print('M_rudder', M_rudder)
+# 	# moment about boat COG
+# 	# anti-clockwise is positive direction
+# 	M_rudder = F_mag * rudder_ml * -np.sign(F_ang)
+# 	#print('M_rudder', M_rudder)
 
-	return M_rudder
+# 	return M_rudder
 
 def moment(F_pol, part_angle, boat_angle, moment_arm_length, save_name):
 
@@ -1181,7 +1181,7 @@ def moment(F_pol, part_angle, boat_angle, moment_arm_length, save_name):
 	# moment about boat COG
 	# anti-clockwise is positive direction
 	M = F_mag * moment_arm_length * -np.sign(F_ang)
-	print('M', M)
+	#print('M', M)
 
 	return M
 
@@ -1222,14 +1222,15 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 	hull_moment_arm = 0.1
 
 
-	M_rudder = rudder_moment(Fr_pol, rudder_angle, boat_angle)
-	print('M_rudder', M_rudder)
+	# M_rudder = rudder_moment(Fr_pol, rudder_angle, boat_angle)
+	# print('M_rudder', M_rudder)
 	M_rudder = moment(Fr_pol, rudder_angle, boat_angle, rudder_moment_arm, save_name='rudder_moment_force')
-	print('M_rudder', M_rudder)
+	
 
-	M_inertia = inertial_moment(Fh_pol, boat_angle)
-	print('M_inertia', M_inertia)
-	M_rudder = moment(Fr_pol, boat_angle, boat_angle, hull_moment_arm, save_name='hull_moment_force')
+	# M_inertia = inertial_moment(Fh_pol, boat_angle)
+	# print('M_inertia', M_inertia)
+	M_inertia = moment(Fh_pol, boat_angle, boat_angle, hull_moment_arm, save_name='hull_moment_force')
+	print('M_rudder', M_rudder)
 	print('M_inertia', M_inertia)
 
 	
