@@ -367,10 +367,14 @@ def moment_force_angle(part_angle, incident_vector_polar, boat_angle):
 	# First find angle of incident vector in part frame of ref
 	# incident cevotr in globa frame of ref
 	V_pol = incident_vector_polar
+
 	# incident vector in boat LRF
 	V_pol[0] -= boat_angle
-	# incident vector in part RF
-	V_pol[0] -= part_angle
+
+	if not np.allclose(four_quad(part_angle), four_quad(boat_angle)):
+		print('not hull')
+		# incident vector in part RF
+		V_pol[0] -= part_angle
 	
 	if (0 <= V_pol[0] < pi):   # first or second quadrant relative to part
 		angle = pi/2
@@ -625,9 +629,9 @@ def aero_force(part,
 			cl.append(CL)
 			cd.append(CD)
 		#fig = plt.subplots()
-		#if part == 'hull':
+		if part == 'hull':
 		#if part == 'rudder':
-		if part == 'rudder':
+		#if part == 'rudder':
 			attack_a= rad2deg(attack_a)
 			plt.plot(attack_a, cl, label='lift '+ part)
 			plt.plot(attack_a, cd, label='drag '+ part)
@@ -874,22 +878,22 @@ def draw_vectors(rudder, sail,
 	vectors = [
                    #[COErudder[x]   , COErudder[y], Lr_car[x], Lr_car[y], 'Lrud'],
                    #[COErudder[x]   , COErudder[y], Dr_car[x], Dr_car[y], 'Drud'],
-                   #[pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
-                   #[pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
+                   [pos_car[x], pos_car[y], Lh_car[x], Lh_car[y], 'Lhull'],
+                   [pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
                    #[pos_car[x], pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
                     # sail lift   
-                   # [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
-                   [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],    
+                   #[pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
+                   #[pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],    
                    # #[pos_car[x], pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
                    
-                   # [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
-                   #[pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
-                   # [COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
+                   [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
+                   [pos_car[x],             pos_car[y], Fh_car[x],  Fh_car[y], 'Fh'],
+                   [COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    # #[COErudder[x]   , COErudder[y], Fr_car[x],  Fr_car[y], 'Fr'],
                    
                    [pos_car[x], pos_car[y], sway_car[x],  sway_car[y], 'Fsway'],
                    [pos_car[x], pos_car[y], surge_car[x],  surge_car[y], 'Fsurge'],
-                   [pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'],
+                   #[pos_car[x], pos_car[y], v_car[x],  v_car[y], 'v'],
                    #[COErudder[x]   , COErudder[y], Fr_moment_car[x],  Fr_moment_car[y], 'Fr_moment'],
                    #[pos_car[x], pos_car[y], Fh_moment_car[x],  Fh_moment_car[y], 'Fh_moment']
                    ]
@@ -900,7 +904,7 @@ def draw_vectors(rudder, sail,
 	#for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
 	for n, (V, c) in enumerate(zip(vectors, colors), 1):
 		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		quiver_scale = 10 # 50 #10
+		quiver_scale = 2#10 # 50 #10
 		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
 		#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 		quiver_key_scale = quiver_scale/10#100
@@ -1156,6 +1160,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 def moment(F_pol, part_angle, boat_angle, moment_arm_length, save_name):
 
+	# angle of attack of force relative to boat
 	angle = attack_angle(part_angle, boat_angle, F_pol)
 	#print('angle of attack', angle)
 
@@ -1163,7 +1168,8 @@ def moment(F_pol, part_angle, boat_angle, moment_arm_length, save_name):
 	F_mag = F_pol[1] * sin(angle)
 	#print('Fr sin alpha', F_mag)
 	# rudder force, LRF
-	Fr_pol_LRF = np.array([four_quad(F_pol[0] - boat_angle), F_pol[1]])
+	#Fr_pol_LRF = np.array([four_quad(F_pol[0] - boat_angle), F_pol[1]])
+
 	# angle indicating direction of rudder moment in boat LRF (i.e. pi/2 or -pi/2)
 	F_ang = moment_force_angle(part_angle, F_pol, boat_angle)
 	#print('F_ang', F_ang)
@@ -1176,8 +1182,18 @@ def moment(F_pol, part_angle, boat_angle, moment_arm_length, save_name):
 	# 	        (rudder_l / 2) * cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
 	
 	# moment about boat COG
-	# anti-clockwise is positive direction
-	M = F_mag * moment_arm_length * -np.sign(F_ang)
+	# if COE is further forward/bowward of boat COG (i.e. hull COE): 
+	#		pi/2 = +ve (ccw) ,  -pi/2 = -ve (cw)  
+	# if COE is further backward/sternward of boat COG (i.e. rudder COE): 
+	#		pi/2 = -ve (cw) ,  -pi/2 = +ve (ccw)  
+	if np.allclose(four_quad(part_angle), four_quad(boat_angle)): # if hull
+		moment_direction = np.sign(F_ang)
+	else: # if rudder
+		moment_direction = -np.sign(F_ang)
+
+
+
+	M = F_mag * moment_arm_length * moment_direction #-np.sign(F_ang)
 	#print('M', M)
 
 	return M
