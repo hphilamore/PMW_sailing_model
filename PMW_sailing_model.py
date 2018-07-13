@@ -29,6 +29,7 @@ TODO
 MOST IMPORTANTLY
 - sail drag is really low - increase this so that boat moves realistically under pure drag
 - introduce roll to deal with lateral force that curently accounted for using an arbitrary scale factor
+- 
 
 - plot sail area, chord, thicknes and max nornmal force coefficent should chnage dynamically with sail angle --> examine resulting drag coefficient
 - use odeint solver with empirical wind data as forcing function
@@ -629,9 +630,9 @@ def aero_force(part,
 			cl.append(CL)
 			cd.append(CD)
 		#fig = plt.subplots()
-		if part == 'hull':
+		#if part == 'hull':
 		#if part == 'rudder':
-		#if part == 'rudder':
+		if part == 'sail':
 			attack_a= rad2deg(attack_a)
 			plt.plot(attack_a, cl, label='lift '+ part)
 			plt.plot(attack_a, cd, label='drag '+ part)
@@ -882,8 +883,8 @@ def draw_vectors(rudder, sail,
                    [pos_car[x], pos_car[y], Dh_car[x], Dh_car[y], 'Dhull'],
                    #[pos_car[x], pos_car[y], Ds_car[x], Ds_car[y], 'Dsail'],
                     # sail lift   
-                   #[pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
-                   #[pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],    
+                   [pos_car[x], pos_car[y], tw_car[x],  tw_car[y], 'tw'],
+                   [pos_car[x], pos_car[y], aw_car[x],  aw_car[y], 'aw'],    
                    # #[pos_car[x], pos_car[y], Ls_car[x], Ls_car[y], 'Lsail'],
                    
                    [pos_car[x],             pos_car[y], Fs_car[x],  Fs_car[y], 'Fs'],
@@ -915,7 +916,7 @@ def draw_vectors(rudder, sail,
 	# ax1.set_xlim([0, 4])
 	# ax1.set_ylim([0, 4])
 
-def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
+def dvdt(Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 	"""
 	Acceleration of the PMW, angle and magnitude, LRF
@@ -928,7 +929,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	print(boat_angle)
 	# initial vel cartesian
 	#print('vel_pol_GRF_init_', v_pol)
-	v_car = pol2cart(v_pol)
+	#v_car = pol2cart(v_pol)
 	#print('vel_car_GRF_init_', v_car)
 
 
@@ -939,35 +940,39 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	Fh_pol_LRF = np.array([Fh_pol[0]-boat_angle, Fh_pol[1]])
 
 
-	Fs_car = pol2cart(Fs_pol_LRF)
-	Fr_car = pol2cart(Fr_pol_LRF)
-	Fh_car = pol2cart(Fh_pol_LRF)
-	v_car = pol2cart(v_pol)
+	Fs_car_LRF = pol2cart(Fs_pol_LRF)
+	Fr_car_LRF = pol2cart(Fr_pol_LRF)
+	Fh_car_LRF = pol2cart(Fh_pol_LRF)
+
+	print('Fs_car', Fs_car_LRF)
+	print('Fr_car', Fr_car_LRF)
+	print('Fh_car', Fh_car_LRF)
+	#v_car = pol2cart(v_pol)
 
 	# print('local forces:')
 	# print('sail', Fs_car)
 	# print('rudder', Fr_car)
 	# print('hull', Fh_car)
 
-	F = Fs_car + Fh_car + Fr_car
+	F_LRF = Fs_car_LRF + Fh_car_LRF + Fr_car_LRF
 
-	F_surge_car = np.array([F[x], 0.0])
-	F_sway_car = np.array([0.0, F[y]])
+	F_surge_car_LRF = np.array([F_LRF[x], 0.0])
+	F_sway_car_LRF = np.array([0.0, F_LRF[y]])
 
 	# convert to polar coordinates
-	F_surge_pol = cart2pol(F_surge_car)
-	F_sway_pol = cart2pol(F_sway_car)
+	F_surge_pol_LRF = cart2pol(F_surge_car_LRF)
+	F_sway_pol_LRF = cart2pol(F_sway_car_LRF)
 
 
-	F_car_thrust = np.array([F[x], 0])
+	F_car_thrust_LRF = np.array([F_LRF[x], 0])
 	#print('Fthrust', F_car_thrust)
 	
 
 	# convertto polar coords
-	Fpol_thrust = cart2pol(F_car_thrust)
+	Fpol_thrust_LRF = cart2pol(F_car_thrust_LRF)
 
 	# convert to acceleration by dividing magnitude through by mass
-	acceleration = np.array([Fpol_thrust[0], Fpol_thrust[1]/mass])
+	acceleration_LRF = np.array([Fpol_thrust_LRF[0], Fpol_thrust_LRF[1]/mass])
 	# print('acc_LRF_pol', acceleration)
 	# print('acc_LRF_car', pol2cart(acceleration))
 
@@ -980,8 +985,8 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	# acceleration[0] += boat_angle
 
 	# # store data for plotting : LRF (updated to GRF in main code)
-	data['surge_force'].append(F_surge_pol)
-	data['sway_force'].append(F_sway_pol)
+	data['surge_force'].append(F_surge_pol_LRF)
+	data['sway_force'].append(F_sway_pol_LRF)
 	
 
 	# # data['surge_force'].append(Fpol_thrust)
@@ -1000,7 +1005,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	#print()
 
 	#print()
-	return acceleration#, F_sway_pol_LRF
+	return acceleration_LRF#, F_sway_pol_LRF
 
 # def dvdt_new(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
@@ -1248,7 +1253,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 	print('M_inertia', M_inertia)
 
 	#print('M_rudder', M_rudder)
-	M = M_rudder #+ M_inertia
+	M = M_rudder + M_inertia
 	print('M', M)
 	#print(np.rad2deg(M))
 	#print()
@@ -1293,14 +1298,19 @@ def set_sail_angle(binary_actuator, binary_angles):
 	aw_LRF = aw_pol[0] - theta
 
 
-	if pi < aw_LRF <= pi*3/2:
+	if pi <= aw_LRF <= pi*3/2:
 		sa = aw_LRF - pi - pi/12
+		print(aw_LRF, "lift sail")
 
-	elif pi/2 < aw_LRF < pi:
+	elif pi/2 <= aw_LRF <= pi:
 		sa = aw_LRF + pi + pi/12
+		print(aw_LRF, "lift sail")
+
 
 	else:
 		sa = aw_LRF - pi/2
+		print(aw_LRF, "drag sail")
+
 
 	sa = four_quad(sa)
 
@@ -1436,7 +1446,7 @@ def param_solve(#Z_state,
 	#         #dthdt(w, Fr_pol, ra, theta),  
 	#         dwdt(Fr_pol, ra, theta),
 	# 		]
-	acceleration = dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta)
+	acceleration = dvdt(Fs_pol, Fr_pol, Fh_pol, theta)
 	#print('acc_LRF_pol', acceleration)
 
 	ang_acceleration =  dwdt(Fr_pol, ra, theta, Fh_pol)
@@ -1561,7 +1571,7 @@ def main(rudder_angle = 0 ,
 	hull_pre_stall_drag_scale_factor = 0.1
 	hull_pre_stall_scale_factor = 8
 	rudder_scale_factor = 10
-	sail_drag_scale_factor = 0.1
+	sail_drag_scale_factor = 1#0.5#0.1
 
 
 	# initial values of Time-varying parameters
