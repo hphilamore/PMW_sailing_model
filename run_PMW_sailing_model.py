@@ -25,7 +25,7 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
-def systematic_mode(num_points=10, binary=False):
+def systematic_mode(num_points=50, binary=False):
 	"""
 	Systematically cycle through combination of each listed:
 		- wind direction
@@ -65,7 +65,7 @@ def systematic_mode(num_points=10, binary=False):
 
 
 
-def random_mode(num_points=15, binary=True):
+def random_mode(num_points=50, binary=True):
 	"""
 	String of randomly generated wind values
 	Systematically cycle through combination of each listed:
@@ -74,7 +74,7 @@ def random_mode(num_points=15, binary=True):
 	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
 	"""
 	sail_angles = [0]
-	rudder_angles = [pi/8]
+	rudder_angles = [pi/4]
 
 	angles = [random.uniform(0, 2*pi) for i in range(num_points)]
 	mags = [random.normalvariate(5, 2) for i in range(num_points)]
