@@ -1228,12 +1228,12 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 	# M_inertia = inertial_moment(Fh_pol, boat_angle)
 	# print('M_inertia', M_inertia)
 	M_inertia = moment(Fh_pol, boat_angle, boat_angle, hull_moment_arm, save_name='hull_moment_force')
-	#print('M_rudder', M_rudder)
-	#print('M_inertia', M_inertia)
+	print('M_rudder', M_rudder)
+	print('M_inertia', M_inertia)
 
 	#print('M_rudder', M_rudder)
 	M = M_rudder #+ M_inertia
-	#print('M', M)
+	print('M', M)
 	#print(np.rad2deg(M))
 	#print()
 
@@ -1252,7 +1252,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 
 	# convert to acceleration by dividing moment by mass moment of area
 	acc_ang = M / Iyaw
-	#print('acc_ang', acc_ang)
+	print('acc_ang', acc_ang)
 
 	return acc_ang
 
@@ -1518,7 +1518,7 @@ def main(rudder_angle = 0 ,
 	CN1inf_h_min = 0
 
 	ACL1_inf_s = 9         # α at max pre-stall lift (deg), empirical data (Fage and Johansen, 1876)
-	ACL1_inf_r = 45         # α at max pre-stall lift (deg), empirical data (Fage and Johansen, 1876)
+	ACL1_inf_r = 9# 45         # α at max pre-stall lift (deg), empirical data (Fage and Johansen, 1876)
 	ACL1_inf_h = 9         # α at max pre-stall lift (deg), empirical data (Fage and Johansen, 1876)
 
 	# Minimum drag coefficient (i.e. CD at angle of attack = A0) for an infinite foil
@@ -1638,6 +1638,7 @@ def main(rudder_angle = 0 ,
 		# update local velocity
 		v_pol_LRF = cart2pol( pol2cart(v_pol_LRF) + pol2cart(acc_LRF) )
 		print('v_pol_LRF', v_pol_LRF)
+		print('v_cart_LRF', pol2cart(v_pol_LRF))
 
 		# convert back to global velocity to calculate new forces
 		v_pol = np.array( [v_pol_LRF[0]+theta, v_pol_LRF[1]] )

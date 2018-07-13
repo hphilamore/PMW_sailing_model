@@ -25,7 +25,7 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
-def systematic_mode(num_points=50, binary=False):
+def systematic_mode(num_points=20, binary=False):
 	"""
 	Systematically cycle through combination of each listed:
 		- wind direction
@@ -329,7 +329,7 @@ def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
 
 #random_mode(binary=True)
 
-systematic_mode(binary=True)
+systematic_mode(binary=False)
 
 
 
