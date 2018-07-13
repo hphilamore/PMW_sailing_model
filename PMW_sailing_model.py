@@ -23,6 +23,7 @@ Assumptions:
 - hull drag too large if following same model as used for flat pat saila nd rudder, 3 scaling factors  applied to correct drag
 - scale factor also used for boat second moment of area
 - roll neglected for now
+- water velocity in glocbal frame is neglected
 
 TODO
 MOST IMPORTANTLY
@@ -939,10 +940,10 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	Fh_car = pol2cart(Fh_pol_LRF)
 	v_car = pol2cart(v_pol)
 
-	print('local forces:')
-	print('sail', Fs_car)
-	print('rudder', Fr_car)
-	print('hull', Fh_car)
+	# print('local forces:')
+	# print('sail', Fs_car)
+	# print('rudder', Fr_car)
+	# print('hull', Fh_car)
 
 	F = Fs_car + Fh_car + Fr_car
 
@@ -955,7 +956,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 
 	F_car_thrust = np.array([F[x], 0])
-	print('Fthrust', F_car_thrust)
+	#print('Fthrust', F_car_thrust)
 	
 
 	# convertto polar coords
@@ -963,8 +964,8 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 	# convert to acceleration by dividing magnitude through by mass
 	acceleration = np.array([Fpol_thrust[0], Fpol_thrust[1]/mass])
-	print('acc_LRF_pol', acceleration)
-	print('acc_LRF_car', pol2cart(acceleration))
+	# print('acc_LRF_pol', acceleration)
+	# print('acc_LRF_car', pol2cart(acceleration))
 
 
 
@@ -1230,7 +1231,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 	#print('M_rudder', M_rudder)
 	#print('M_inertia', M_inertia)
 
-	print('M_rudder', M_rudder)
+	#print('M_rudder', M_rudder)
 	M = M_rudder #+ M_inertia
 	#print('M', M)
 	#print(np.rad2deg(M))
@@ -1251,7 +1252,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 
 	# convert to acceleration by dividing moment by mass moment of area
 	acc_ang = M / Iyaw
-	print('acc_ang', acc_ang)
+	#print('acc_ang', acc_ang)
 
 	return acc_ang
 
@@ -1420,7 +1421,7 @@ def param_solve(#Z_state,
 	#         dwdt(Fr_pol, ra, theta),
 	# 		]
 	acceleration = dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta)
-	print('acc_LRF_pol', acceleration)
+	#print('acc_LRF_pol', acceleration)
 
 	ang_acceleration =  dwdt(Fr_pol, ra, theta, Fh_pol)
 
@@ -1621,27 +1622,49 @@ def main(rudder_angle = 0 ,
 
 		print('acc_LRF_pol', acc_LRF)
 
+		# convert global velocity to local velocity
+		v_pol_LRF = np.array( [v_pol[0]-theta, v_pol[1]] )
+		print('v_pol_LRF_init', v_pol_LRF)
+
 		# update angular velocity and angle
 		w += ang_acc
 		theta += w
 		print('theta', theta)
 
-		# convert global velocity to local velocity
-		#v_pol_LRF = np.array( [v_pol[0]+theta, v_pol[1]] )
+		# # convert global velocity to local velocity
+		# v_pol_LRF = np.array( [v_pol[0]-theta, v_pol[1]] )
+		# print('v_pol_LRF_init', v_pol_LRF)
 
+		# update local velocity
+		v_pol_LRF = cart2pol( pol2cart(v_pol_LRF) + pol2cart(acc_LRF) )
+		print('v_pol_LRF', v_pol_LRF)
 
-		# convert acceleration to GRF using NEW angle
-		acc_GRF = np.array( [acc_LRF[0]+theta, acc_LRF[1]] )
-		acc_car_GRF = pol2cart(acc_GRF)
-		print('acc_GRF_pol', acc_GRF)
-		print('acc_GRF_car', acc_car_GRF)
+		# convert back to global velocity to calculate new forces
+		v_pol = np.array( [v_pol_LRF[0]+theta, v_pol_LRF[1]] )
+		print('v_pol_GRF', v_pol)
 
-		# update velocity and position
-		print('v_init', v_pol)
-		v_pol = cart2pol( pol2cart(v_pol) + pol2cart(acc_GRF) )
-		print('v_pol', v_pol)
 		pos_pol = cart2pol( pol2cart(pos_pol) + pol2cart(v_pol) )
-		print('pos_pol', pos_pol)
+		print('pos_pol_GRF', pos_pol)
+		
+
+		# # update global position
+		# print('pos_pol', pos_pol)
+
+
+
+
+		# # convert acceleration to GRF using NEW angle
+		# acc_GRF = np.array( [acc_LRF[0]+theta, acc_LRF[1]] )
+		# acc_car_GRF = pol2cart(acc_GRF)
+		# print('acc_GRF_pol', acc_GRF)
+		# print('acc_GRF_car', acc_car_GRF)
+
+		# # update velocity and position
+		# print('v_init', v_pol)
+		# v_pol = cart2pol( pol2cart(v_pol) + pol2cart(acc_GRF) )
+		# print('v_pol', v_pol)
+		# pos_pol = cart2pol( pol2cart(pos_pol) + pol2cart(v_pol) )
+		# print('pos_pol', pos_pol)
 
 
 		# F_surge_pol[0] += boat_angle
@@ -1649,8 +1672,8 @@ def main(rudder_angle = 0 ,
 		# acceleration[0] += boat_angle
 
 		# Convert to GRF
-		data['surge_force'][-1][0] -= theta
-		data['sway_force'][-1][0] -= theta
+		data['surge_force'][-1][0] += theta
+		data['sway_force'][-1][0] += theta
 		
 
 		# # data['surge_force'].append(Fpol_thrust)
