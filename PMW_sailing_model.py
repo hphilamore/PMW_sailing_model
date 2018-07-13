@@ -913,7 +913,7 @@ def draw_vectors(rudder, sail,
 def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 	"""
-	Acceleration of the PMW, angle and magnitude, GRF
+	Acceleration of the PMW, angle and magnitude, LRF
 
 	"""
 
@@ -926,10 +926,6 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	v_car = pol2cart(v_pol)
 	#print('vel_car_GRF_init_', v_car)
 
-	#print('using global velocity to find initial local veloity...')
-	# vel_pol_LRF_init = np.array([v_pol[0]-boat_angle, v_pol[1]])
-	# print('vel_pol_LRF_init_', vel_pol_LRF_init)
-	#v_car_LRF_init = pol2cart( vel_pol_LRF_init)
 
 
 	# CONVERT EVERYTHING TO LOCAL FRAME OF REF
@@ -937,12 +933,6 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	Fr_pol_LRF = np.array([Fr_pol[0]-boat_angle, Fr_pol[1]])
 	Fh_pol_LRF = np.array([Fh_pol[0]-boat_angle, Fh_pol[1]])
 
-
-	# convert to cartesian coords
-	# Fs_car = pol2cart(Fs_pol)
-	# Fr_car = pol2cart(Fr_pol)
-	# Fh_car = pol2cart(Fh_pol)
-	# v_car = pol2cart(v_pol)
 
 	Fs_car = pol2cart(Fs_pol_LRF)
 	Fr_car = pol2cart(Fr_pol_LRF)
@@ -963,8 +953,7 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	F_surge_pol = cart2pol(F_surge_car)
 	F_sway_pol = cart2pol(F_sway_car)
 
-	# only consider force in boat frame x direction
-	# F_car_thrust = np.array([F[x], 0.05*F[y]])# F# F_surge_car#np.array([F[x], 0.1*F[y]]) # F#F_surge_car #= np.array([F[x], 0.0]) # np.array([surge, 0.0])
+
 	F_car_thrust = np.array([F[x], 0])
 	print('Fthrust', F_car_thrust)
 	
@@ -974,46 +963,33 @@ def dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 	# convert to acceleration by dividing magnitude through by mass
 	acceleration = np.array([Fpol_thrust[0], Fpol_thrust[1]/mass])
-	print('acc_car_LRF_', pol2cart(acceleration))
+	print('acc_LRF_pol', acceleration)
+	print('acc_LRF_car', pol2cart(acceleration))
 
 
-	# local forces:
-	# sail [ 1.15294479 -0.01985884]
-	# rudder [-0.00020113  0.00394747]
-	# hull [-5.70870667e-06 -2.66723166e-05]
-	# Fthrust [1.15273795 0.        ]
-	# acc_car_LRF_ [0.0576369 0.       ]
-	# acc_car_GRF_ [ 5.76368931e-02 -2.26065082e-05]
-	# acc_pol_GRF_ [6.28279308 0.0576369 ]
-	# boat_angle 6.282793084319613
-	# v_cart_init [0.11955334 0.        ]
-	# v_cart [ 1.77190230e-01 -2.26065082e-05]
-	# v_pol [6.28305772 0.17719023]
-
-
-	#print('acc_pol_LRF', acceleration)
 
 	# convert to GRF 
 	# convert to global coordinates
-	F_surge_pol[0] += boat_angle
-	F_sway_pol[0] += boat_angle
-	acceleration[0] += boat_angle
-	# store data for plotting
+	# F_surge_pol[0] += boat_angle
+	# F_sway_pol[0] += boat_angle
+	# acceleration[0] += boat_angle
+
+	# # store data for plotting : LRF (updated to GRF in main code)
 	data['surge_force'].append(F_surge_pol)
 	data['sway_force'].append(F_sway_pol)
 	
 
-	# data['surge_force'].append(Fpol_thrust)
-		# change in vel cartesian
-	print('boat_angle', boat_angle)
-	dvdt_pol_GRF = acceleration
-	#print('acc_pol_GRF_', dvdt_pol_GRF)
-	print('acc_pol_GRF_', dvdt_pol_GRF)
-	print('diff', 2 * pi - dvdt_pol_GRF[0])
+	# # data['surge_force'].append(Fpol_thrust)
+	# 	# change in vel cartesian
+	# print('boat_angle', boat_angle)
+	# dvdt_pol_GRF = acceleration
+	# #print('acc_pol_GRF_', dvdt_pol_GRF)
+	# print('acc_pol_GRF_', dvdt_pol_GRF)
+	# print('diff', 2 * pi - dvdt_pol_GRF[0])
 
 
-	dvdt_car_GRF = pol2cart(dvdt_pol_GRF)
-	print('acc_car_GRF_', dvdt_car_GRF)
+	# dvdt_car_GRF = pol2cart(dvdt_pol_GRF)
+	# print('acc_car_GRF_', dvdt_car_GRF)
 
 	
 	#print()
@@ -1239,6 +1215,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 	rudder_moment_arm = (boat_l / 2 +    # distance rudder hinge to boat COG
 		                (rudder_l / 2) * cos(abs(rudder_angle - boat_angle))) # distnace rudder hinge to rudder COE with chnage in length due to rudder angle
 
+
 	hull_moment_arm = 0.1
 
 
@@ -1253,8 +1230,8 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 	#print('M_rudder', M_rudder)
 	#print('M_inertia', M_inertia)
 
-	
-	M = M_rudder + M_inertia
+	print('M_rudder', M_rudder)
+	M = M_rudder #+ M_inertia
 	#print('M', M)
 	#print(np.rad2deg(M))
 	#print()
@@ -1274,6 +1251,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 
 	# convert to acceleration by dividing moment by mass moment of area
 	acc_ang = M / Iyaw
+	print('acc_ang', acc_ang)
 
 	return acc_ang
 
@@ -1442,6 +1420,7 @@ def param_solve(#Z_state,
 	#         dwdt(Fr_pol, ra, theta),
 	# 		]
 	acceleration = dvdt(v_pol, Fs_pol, Fr_pol, Fh_pol, theta)
+	print('acc_LRF_pol', acceleration)
 
 	ang_acceleration =  dwdt(Fr_pol, ra, theta, Fh_pol)
 
@@ -1493,8 +1472,6 @@ def main(rudder_angle = 0 ,
 	global x, y
 
 	x, y = 0, 1
-
-
 
 
 	rho_air = 1.225;   # density air
@@ -1605,6 +1582,7 @@ def main(rudder_angle = 0 ,
 
 	# solve parameters at each Timestep
 	for t, tw_pol in zip (Time, true_wind_polar):
+		print()
 		print(t)
 		#print()
 		# data["sail_angle"].append(sa)
@@ -1631,7 +1609,9 @@ def main(rudder_angle = 0 ,
 		# 	                binary_angles, 
 		# 	                plot_force_coefficients)
 
-		acc, ang_acc = param_solve(#Z_init_state, 
+
+		# LOCAL ACCEERATION AND ANGULAR ACCELERATION
+		acc_LRF, ang_acc = param_solve(#Z_init_state, 
 							v_pol,
 							w,
 			                auto_adjust_sail, 
@@ -1639,18 +1619,66 @@ def main(rudder_angle = 0 ,
 			                binary_angles, 
 			                plot_force_coefficients)
 
-		print('v_cart_init', pol2cart(v_pol))
+		print('acc_LRF_pol', acc_LRF)
 
-		v_pol = cart2pol( pol2cart(v_pol) + pol2cart(acc) )
-		print('v_pol', v_pol)
-		v_cart = pol2cart(v_pol)
-		print('v_cart', v_cart)
-		v_pol = cart2pol(v_cart)
-		print('v_pol', v_pol)
-		print('v_car_local', pol2cart(np.array([v_pol[0]+theta, v_pol[1]])))
-		#print('v_pol', v_pol)
-		print()
+		# update angular velocity and angle
 		w += ang_acc
+		theta += w
+		print('theta', theta)
+
+		# convert global velocity to local velocity
+		#v_pol_LRF = np.array( [v_pol[0]+theta, v_pol[1]] )
+
+
+		# convert acceleration to GRF using NEW angle
+		acc_GRF = np.array( [acc_LRF[0]+theta, acc_LRF[1]] )
+		acc_car_GRF = pol2cart(acc_GRF)
+		print('acc_GRF_pol', acc_GRF)
+		print('acc_GRF_car', acc_car_GRF)
+
+		# update velocity and position
+		print('v_init', v_pol)
+		v_pol = cart2pol( pol2cart(v_pol) + pol2cart(acc_GRF) )
+		print('v_pol', v_pol)
+		pos_pol = cart2pol( pol2cart(pos_pol) + pol2cart(v_pol) )
+		print('pos_pol', pos_pol)
+
+
+		# F_surge_pol[0] += boat_angle
+		# F_sway_pol[0] += boat_angle
+		# acceleration[0] += boat_angle
+
+		# Convert to GRF
+		data['surge_force'][-1][0] -= theta
+		data['sway_force'][-1][0] -= theta
+		
+
+		# # data['surge_force'].append(Fpol_thrust)
+		# 	# change in vel cartesian
+		# print('boat_angle', boat_angle)
+		# dvdt_pol_GRF = acceleration
+		# #print('acc_pol_GRF_', dvdt_pol_GRF)
+		# print('acc_pol_GRF_', dvdt_pol_GRF)
+		# print('diff', 2 * pi - dvdt_pol_GRF[0])
+
+
+		# dvdt_car_GRF = pol2cart(dvdt_pol_GRF)
+		# print('acc_car_GRF_', dvdt_car_GRF)
+
+
+
+		#print('v_cart_init', pol2cart(v_pol))
+
+		#v_pol = cart2pol( pol2cart(v_pol) + pol2cart(acc) )
+		#print('v_pol', v_pol)
+		#v_cart = pol2cart(v_pol)
+		#print('v_cart', v_cart)
+		#v_pol = cart2pol(v_cart)
+		# print('v_pol', v_pol)
+		# print('v_car_local', pol2cart(np.array([v_pol[0]+theta, v_pol[1]])))
+		# #print('v_pol', v_pol)
+		# print()
+		#w += ang_acc
 
 
 		# for i, (z, s) in enumerate(zip(Z_init_state, state)):
@@ -1661,8 +1689,8 @@ def main(rudder_angle = 0 ,
 		# 	else:
 		# 		Z_init_state[i] = z + s
 		
-		pos_pol = cart2pol( pol2cart(pos_pol) + pol2cart(v_pol) )
-		theta += w
+		#pos_pol = cart2pol( pol2cart(pos_pol) + pol2cart(v_pol) )
+		#theta += w
 		# print('velocity_cart_end', pol2cart(Z_init_state[1]))
 		# print('position_cart_end', pol2cart(Z_init_state[0]))
 		# print()
