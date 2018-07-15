@@ -25,7 +25,7 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
-def systematic_mode(num_points=10, binary=False):
+def systematic_mode(num_points=20, binary=False, Latency=1):
 	"""
 	Systematically cycle through combination of each listed:
 		- wind direction
@@ -61,11 +61,12 @@ def systematic_mode(num_points=10, binary=False):
 					     save_figs = False,#True,
 					     fig_location = save_location,
 					     plot_force_coefficients = False,
-					     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}')
+					     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}',
+					     latency = Latency)
 
 
 
-def random_mode(num_points=50, binary=True):
+def random_mode(num_points=50, binary=True, Latency=1):
 	"""
 	String of randomly generated wind values
 	Systematically cycle through combination of each listed:
@@ -98,7 +99,8 @@ def random_mode(num_points=50, binary=True):
 			     save_figs = True,
 			     fig_location = save_location,
 			     plot_force_coefficients = False,
-			     output_plot_title = 'random, binary: {binary}')
+			     output_plot_title = 'random, binary: {binary}',
+			     latency = Latency)
 
 
 
@@ -149,7 +151,8 @@ def empirical_mode(wdID, data_points=slice(20,30), binary=True):
 			     save_figs = True,
 			     fig_location = save_location,
 			     plot_force_coefficients = False,
-			     output_plot_title = f'start: {T_ticks[0]}, end: {T_ticks[1]}, timestep: {T_ticks[2]}, weather data: {wdID}, binary: {binary}')
+			     output_plot_title = f'start: {T_ticks[0]}, end: {T_ticks[1]}, timestep: {T_ticks[2]}, weather data: {wdID}, binary: {binary}',
+			     latency = Latency)
 
 
 # ### TEST CASES ###
@@ -329,7 +332,11 @@ def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
 
 #random_mode(binary=True)
 
-systematic_mode(binary=False)
+B = [False, True]
+L = [0, 5, 10]
+
+for b, l in zip(B, L):
+	systematic_mode(binary=b, Latency=l)
 
 
 

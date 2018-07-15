@@ -20,16 +20,14 @@ Assumptions:
 - All hydronamic side force is translated into lateral motion (no heeling moment)
 - Hull, sail and rudder shape behaves as aerofoil 
 - maximum normal force coefficent chosen to achieve characteristic post-stall lift and drag curves (empirical value 0.45)
-- hull drag too large if following same model as used for flat pat saila nd rudder, 3 scaling factors  applied to correct drag
-- scale factor also used for boat second moment of area
 - roll neglected for now
 - water velocity in glocbal frame is neglected
 
 TODO
 MOST IMPORTANTLY
-- sail drag is really low - increase this so that boat moves realistically under pure drag
 - introduce roll to deal with lateral force that curently accounted for using an arbitrary scale factor
-- 
+- get rid of scaling factor for lateral force by considering smaller time increments (i.e. using ODE solver with wind as forcing function)
+
 
 - plot sail area, chord, thicknes and max nornmal force coefficent should chnage dynamically with sail angle --> examine resulting drag coefficient
 - use odeint solver with empirical wind data as forcing function
@@ -37,6 +35,8 @@ MOST IMPORTANTLY
 - find slope of linear segment of pre-stall lift (simplified) more accuratelty
 - characterise real airfoil and subs in drag coefficent curve for estmaited curve in this model
 - replace lift angle gernatin function with simlper lift angle function that currently isn't working for unknown reason - needs checking
+- hull drag too large if following same model as used for flat pat saila nd rudder, 3 scaling factors  applied to correct drag
+- scale factor also used for boat lateral force
 
 """
 
@@ -441,6 +441,7 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, ACL1_inf, CD0, part):
     Uses model from "Models of Lift and Drag Coefficients of Stalled and Unstalled Airfoils in Wind Turbines and Wind Tunnels" by David A. Spera
 	"""
 	# David A. Spera model uses degrees
+	#print('attack_angle', attack_angle)
 	a = rad2deg(attack_angle)    # angle of attack
 
 	############################
@@ -518,6 +519,8 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, ACL1_inf, CD0, part):
 	# Post stall drag
 	#print('a', a)
 	#print('ACL1', ACL1)
+	#print('ACL1', ACL1)
+	#print('a', a)
 	if (2*A0 <= a < ACL1):
 		CD2 = 0
 	elif ACL1 <= a:
@@ -525,7 +528,12 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, ACL1_inf, CD0, part):
 		CD2 = CD1max + (CD2max - CD1max) * sin(deg2rad(ang))
 		#print('CD2', CD2)
 
-	if part == 'hull' or part == 'rudder':
+
+	hull_drag_scale_factor = 0.01# 0.5#0.1# 0.01
+	hull_pre_stall_drag_scale_factor = 0.1
+	hull_pre_stall_scale_factor = 8
+
+	if part == 'hull': #or part == 'rudder':
 		CL2 *= hull_drag_scale_factor #* 1.2
 		CD2 *= hull_drag_scale_factor #* 1.2	
 
@@ -539,11 +547,11 @@ def aero_coeffs(attack_angle, AR, c, t, CN1inf_max, ACL1_inf, CD0, part):
 		# CL1 *= rudder_scale_factor * 2 * 0.05#* 0.05
 		# CD1 *= rudder_scale_factor * 2 * 0.7
 
-		CL2 *= rudder_scale_factor #* 0.05#* 0.05
-		CD2 *= rudder_scale_factor * 1.2	
+		CL2 *= hull_drag_scale_factor * rudder_scale_factor #* 0.05#* 0.05
+		CD2 *= hull_drag_scale_factor * rudder_scale_factor * 1.2	
 
-		CL1 *= rudder_scale_factor * 2 #* 0.05#* 0.05
-		CD1 *= rudder_scale_factor * 2 #* 0.7
+		CL1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor * rudder_scale_factor * 2 #* 0.05#* 0.05
+		CD1 *= hull_drag_scale_factor * hull_pre_stall_scale_factor * hull_pre_stall_drag_scale_factor * rudder_scale_factor * 2 #* 0.7
 
 
 
@@ -632,7 +640,7 @@ def aero_force(part,
 		#fig = plt.subplots()
 		#if part == 'hull':
 		#if part == 'rudder':
-		if part == 'sail':
+		if part == 'hull':
 			attack_a= rad2deg(attack_a)
 			plt.plot(attack_a, cl, label='lift '+ part)
 			plt.plot(attack_a, cd, label='drag '+ part)
@@ -947,6 +955,7 @@ def dvdt(Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	print('Fs_car', Fs_car_LRF)
 	print('Fr_car', Fr_car_LRF)
 	print('Fh_car', Fh_car_LRF)
+	print('F_car', Fs_car_LRF + Fr_car_LRF + Fh_car_LRF)
 	#v_car = pol2cart(v_pol)
 
 	# print('local forces:')
@@ -965,6 +974,8 @@ def dvdt(Fs_pol, Fr_pol, Fh_pol, boat_angle):
 
 
 	F_car_thrust_LRF = np.array([F_LRF[x], 0])
+	F_car_thrust_LRF = np.array([F_LRF[x], 0.1*F_LRF[y]])
+	#F_car_thrust_LRF = F_LRF# np.array([F_LRF[x], 0])
 	#print('Fthrust', F_car_thrust)
 	
 
@@ -1359,7 +1370,7 @@ def param_solve(#Z_state,
 	            plot_force_coefficients):
 
 	# global sa, ra, vpol, pos_pol, aw_pol, theta, w
-	global vpol, aw_pol
+	global vpol, aw_pol, start_time
 	"""
 	Solves the time dependent parameters:
 	- Boat velocity             (polar, global frame)
@@ -1388,7 +1399,13 @@ def param_solve(#Z_state,
 	#print(aw_pol)
 
 	if auto_adjust_sail:
-		set_sail_angle(binary_actuator, binary_angles)
+		time_now = t 
+		if time_now - start_time >= L:
+			print('adjusting sails, t= ', t)
+			set_sail_angle(binary_actuator, binary_angles)
+			start_time = t
+			
+
 
 	#print(sa)
 
@@ -1475,7 +1492,9 @@ def main(rudder_angle = 0 ,
 		 save_figs = False,
 		 fig_location = save_location,
 		 plot_force_coefficients = True,
-		 output_plot_title = None):
+		 output_plot_title = None,
+		 latency = 0 # seconds
+		 ):
 
 	"""
 	Main program.
@@ -1497,9 +1516,12 @@ def main(rudder_angle = 0 ,
 	global Z_init_state, data
 	global tw_pol
 	global x, y
+	global t, start_time, time_now
+	global L # latency
 
 	x, y = 0, 1
 
+	L = latency
 
 	rho_air = 1.225;   # density air
 	rho_water = 1000;  # density water
@@ -1606,6 +1628,9 @@ def main(rudder_angle = 0 ,
 	# data["sail_angle"].append(sa)
 	# data["rudder_angle"].append(ra)
 
+
+	
+	start_time = Time[0]
 
 	# solve parameters at each Timestep
 	for t, tw_pol in zip (Time, true_wind_polar):
