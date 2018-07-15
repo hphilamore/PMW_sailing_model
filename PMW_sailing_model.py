@@ -1726,6 +1726,8 @@ def main(rudder_angle = 0 ,
 		# Convert to GRF
 		data['surge_force'][-1][0] += theta
 		data['sway_force'][-1][0] += theta
+
+		return data
 		
 
 		# # data['surge_force'].append(Fpol_thrust)
@@ -1824,8 +1826,8 @@ def main(rudder_angle = 0 ,
 
 	#title = f'r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}'	
 	title = output_plot_title
-	plt.title(title)	
-
+	plt.title(title)
+	print("im here")	 
 	if save_figs:
 		save_fig(fig_location, title)
 	else:

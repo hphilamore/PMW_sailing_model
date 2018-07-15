@@ -44,25 +44,28 @@ def systematic_mode(num_points=20, binary=False, Latency=1):
 	T = np.arange(num_points)
 	timestep = 1
 	T_ticks = (T[0], T[-1], timestep)
+	data =[]
 
 	for twd in true_wind_dirs:
 		print('WIND DIR =', twd)
 		for tws in true_wind_speed:
 			for r in rudder_angles:
 				for s in sail_angles:
-					main(rudder_angle = r, 
-					     sail_angle = s,
-					     auto_adjust_sail = True,
-					     Time = T,
-					     time_ticks = T_ticks,
-					     true_wind_polar = [np.array([twd, tws])] * num_points,
-					     binary_actuator = binary,
-					     binary_angles = four_bit_sail_angles,
-					     save_figs = False,#True,
-					     fig_location = save_location,
-					     plot_force_coefficients = False,
-					     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}',
-					     latency = Latency)
+					data.append(main(rudder_angle = r, 
+								     sail_angle = s,
+								     auto_adjust_sail = True,
+								     Time = T,
+								     time_ticks = T_ticks,
+								     true_wind_polar = [np.array([twd, tws])] * num_points,
+								     binary_actuator = binary,
+								     binary_angles = four_bit_sail_angles,
+								     save_figs = False,#True,
+								     fig_location = save_location,
+								     plot_force_coefficients = False,
+								     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}',
+								     latency = Latency))
+
+	return data
 
 
 
@@ -85,10 +88,11 @@ def random_mode(num_points=50, binary=True, Latency=1):
 	T = np.arange(num_points)
 	timestep = 1
 	T_ticks = (T[0], T[-1], timestep)
+	data = []
 
 	for r in rudder_angles:
 		for s in sail_angles:
-			main(rudder_angle = r, 
+			data.append(main(rudder_angle = r, 
 			     sail_angle = s,
 			     auto_adjust_sail = True,
 			     Time = T,
@@ -100,7 +104,9 @@ def random_mode(num_points=50, binary=True, Latency=1):
 			     fig_location = save_location,
 			     plot_force_coefficients = False,
 			     output_plot_title = 'random, binary: {binary}',
-			     latency = Latency)
+			     latency = Latency))
+
+	return data
 
 
 
@@ -138,9 +144,11 @@ def empirical_mode(wdID, data_points=slice(20,30), binary=True):
 
 	T, twp, T_ticks = empirical_data(weather_data, timestep=2, noise_sd=0.1, dp=data_points)
 
+	data = []
+
 	for r in rudder_angles:
 		for s in sail_angles:
-			main(rudder_angle = r, 
+			data.append(main(rudder_angle = r, 
 			     sail_angle = s,
 			     auto_adjust_sail = True,
 			     Time = T,
@@ -152,7 +160,9 @@ def empirical_mode(wdID, data_points=slice(20,30), binary=True):
 			     fig_location = save_location,
 			     plot_force_coefficients = False,
 			     output_plot_title = f'start: {T_ticks[0]}, end: {T_ticks[1]}, timestep: {T_ticks[2]}, weather data: {wdID}, binary: {binary}',
-			     latency = Latency)
+			     latency = Latency))
+
+	return data
 
 
 # ### TEST CASES ###
@@ -335,8 +345,15 @@ def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
 B = [False, True]
 L = [0, 5, 10]
 
-for b, l in zip(B, L):
-	systematic_mode(binary=b, Latency=l)
+fig1, ax1 = plt.subplots()	
+
+#all_data = []
+
+for b in B:
+	for l in L:
+		#all_data.append(systematic_mode(binary=b, Latency=l)['position'])
+		pos = systematic_mode(binary=b, Latency=l)
+
 
 
 
