@@ -1727,7 +1727,7 @@ def main(rudder_angle = 0 ,
 		data['surge_force'][-1][0] += theta
 		data['sway_force'][-1][0] += theta
 
-		return data
+		#return data
 		
 
 		# # data['surge_force'].append(Fpol_thrust)
