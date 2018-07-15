@@ -1,4 +1,5 @@
 from PMW_sailing_model import *
+from PMW_plotting import *
 import numpy as np
 from numpy import pi
 import os, time, fnmatch
@@ -8,6 +9,8 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import splrep
 from scipy.interpolate import splev
 import scipy.interpolate
+
+markers = (',', '+', '.', 'o', '*')
 
 
 # set up a folder to store data
@@ -25,7 +28,7 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
-def systematic_mode(num_points=20, binary=False, Latency=1):
+def systematic_mode(num_points=20, binary=False, Latency=1, save_figs=False):
 	"""
 	Systematically cycle through combination of each listed:
 		- wind direction
@@ -50,19 +53,23 @@ def systematic_mode(num_points=20, binary=False, Latency=1):
 		for tws in true_wind_speed:
 			for r in rudder_angles:
 				for s in sail_angles:
-					main(rudder_angle = r, 
-					     sail_angle = s,
-					     auto_adjust_sail = True,
-					     Time = T,
-					     time_ticks = T_ticks,
-					     true_wind_polar = [np.array([twd, tws])] * num_points,
-					     binary_actuator = binary,
-					     binary_angles = four_bit_sail_angles,
-					     save_figs = False,#True,
-					     fig_location = save_location,
-					     plot_force_coefficients = False,
-					     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}',
-					     latency = Latency)
+					data, output_plot_title = main(	 rudder_angle = r, 
+												     sail_angle = s,
+												     auto_adjust_sail = True,
+												     Time = T,
+												     time_ticks = T_ticks,
+												     true_wind_polar = [np.array([twd, tws])] * num_points,
+												     binary_actuator = binary,
+												     binary_angles = four_bit_sail_angles,
+												     fig_location = save_location,
+												     plot_force_coefficients = False,
+												     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}',
+												     latency = Latency
+										    		 )
+
+					individual_boat_force_vector_plots(data, output_plot_title, save_figs)
+
+
 
 
 
@@ -88,19 +95,22 @@ def random_mode(num_points=50, binary=True, Latency=1):
 
 	for r in rudder_angles:
 		for s in sail_angles:
-			main(rudder_angle = r, 
-			     sail_angle = s,
-			     auto_adjust_sail = True,
-			     Time = T,
-			     time_ticks = T_ticks,
-			     true_wind_polar = twp,
-			     binary_actuator = binary,
-			     binary_angles = four_bit_sail_angles,
-			     save_figs = True,
-			     fig_location = save_location,
-			     plot_force_coefficients = False,
-			     output_plot_title = 'random, binary: {binary}',
-			     latency = Latency)
+			data, output_plot_title = main(rudder_angle = r, 
+										     sail_angle = s,
+										     auto_adjust_sail = True,
+										     Time = T,
+										     time_ticks = T_ticks,
+										     true_wind_polar = twp,
+										     binary_actuator = binary,
+										     binary_angles = four_bit_sail_angles,
+										     fig_location = save_location,
+										     plot_force_coefficients = False,
+										     output_plot_title = 'random, binary: {binary}',
+										     latency = Latency
+										     )
+
+
+			individual_boat_force_vector_plots(data, output_plot_title, save_figs)
 
 
 
@@ -140,19 +150,21 @@ def empirical_mode(wdID, data_points=slice(20,30), binary=True):
 
 	for r in rudder_angles:
 		for s in sail_angles:
-			main(rudder_angle = r, 
-			     sail_angle = s,
-			     auto_adjust_sail = True,
-			     Time = T,
-			     time_ticks = T_ticks,
-			     true_wind_polar = twp,
-			     binary_actuator = binary,
-			     binary_angles = four_bit_sail_angles,
-			     save_figs = True,
-			     fig_location = save_location,
-			     plot_force_coefficients = False,
-			     output_plot_title = f'start: {T_ticks[0]}, end: {T_ticks[1]}, timestep: {T_ticks[2]}, weather data: {wdID}, binary: {binary}',
-			     latency = Latency)
+			data, output_plot_title = main(	rudder_angle = r, 
+										     sail_angle = s,
+										     auto_adjust_sail = True,
+										     Time = T,
+										     time_ticks = T_ticks,
+										     true_wind_polar = twp,
+										     binary_actuator = binary,
+										     binary_angles = four_bit_sail_angles,
+										     fig_location = save_location,
+										     plot_force_coefficients = False,
+										     output_plot_title = f'start: {T_ticks[0]}, end: {T_ticks[1]}, timestep: {T_ticks[2]}, weather data: {wdID}, binary: {binary}',
+										     latency = Latency
+										     )
+
+			individual_boat_force_vector_plots(data, output_plot_title, save_figs)
 
 
 # ### TEST CASES ###
@@ -334,10 +346,11 @@ def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
 
 B = [False, True]
 L = [0, 5, 10]
+fig1, ax1 = plt.subplots()	
 
 for b, l in zip(B, L):
 	systematic_mode(binary=b, Latency=l)
-
+plt.show()
 
 
 
