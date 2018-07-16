@@ -25,7 +25,11 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
-def systematic_mode(num_points=20):# , binary=False, Latency=0):
+
+
+
+
+def systematic_mode(num_points=10):# , binary=False, Latency=0):
 	"""
 	Systematically cycle through combination of each listed:
 		- wind direction
@@ -35,18 +39,22 @@ def systematic_mode(num_points=20):# , binary=False, Latency=0):
 	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
 	"""
 	# wind directions
-	binary = [False, True]
-	latency = [0, 5, 10]
-	true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
+	binary = [False]#[False, True]
+	latency = [0]#[0, 5, 10]
+	true_wind_dirs = [0, pi/6, pi/3]#, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
 	true_wind_speed = [5]
 	rudder_angles = [pi/8]
 	sail_angles = [0]
 	#sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
 
+
 	T = np.arange(num_points)
 	timestep = 1
 	T_ticks = (T[0], T[-1], timestep)
 	data = []
+	fig, ax = plt.subplots()
+	fig2, ax2 = plt.subplots()
+
 
 	# for b, l in zip(B, L):
 	for b in binary:
@@ -56,7 +64,7 @@ def systematic_mode(num_points=20):# , binary=False, Latency=0):
 				for tws in true_wind_speed:
 					for r in rudder_angles:
 						for s in sail_angles:
-							data.append(main(rudder_angle = r, 
+							d = main(rudder_angle = r, 
 							     sail_angle = s,
 							     auto_adjust_sail = True,
 							     Time = T,
@@ -65,12 +73,25 @@ def systematic_mode(num_points=20):# , binary=False, Latency=0):
 							     binary_actuator = b,
 							     binary_angles = four_bit_sail_angles,
 							     save_figs = False,#True,
-							     show_figs = False,
+							     show_figs = False, #True,
 							     fig_location = save_location,
 							     plot_force_coefficients = False,
 							     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}',
-							     latency = l))
+							     latency = l)
 
+							
+							print(np.vstack(d['position'])[:,0])
+							print(np.vstack(d['position'])[:,1])
+							print(np.vstack(d['position']))
+							ax.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], '-o', label=str(twd))	
+							ax2.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], 'o', label=str(twd))	
+							#data.append(d)
+							#plt.plot(np.vstack(data['position'][0], np.vstack(data['position'][1])))
+		ax2.legend()
+		plt.show()
+
+
+	
 	print(data)
 
 def random_mode(num_points=50, binary=True, Latency=0):

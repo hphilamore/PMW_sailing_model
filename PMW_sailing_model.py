@@ -630,17 +630,20 @@ def aero_force(part,
 
 	# plot CL and CD across the whole attack angle range (0 --> pi rads)
 	if plot_coefficients:
+		
 		attack_a = np.linspace(0, pi, 1000)
+
 		cl, cd = [], []
 		for a in attack_a:
 			#print("finding attack 1")
 			CL, CD = aero_coeffs(a, AR, c, t, CN1inf_max, ACL1_inf, CD0, part)  				 
 			cl.append(CL)
 			cd.append(CD)
-		#fig = plt.subplots()
+		
 		#if part == 'hull':
 		#if part == 'rudder':
 		if part == 'hull':
+			fig = plt.subplots()
 			attack_a= rad2deg(attack_a)
 			plt.plot(attack_a, cl, label='lift '+ part)
 			plt.plot(attack_a, cd, label='drag '+ part)
@@ -737,7 +740,7 @@ def plot_rudder(boatPos_pol,
 	rudder = Transform2D(rudder, np.array([- boat_l/2, 0]), rudderAngle)
 	rudder = Transform2D(rudder, global_origin, boatAngle, boatPos_car)
 
-	plt.plot(rudder[:,0], rudder[:,1],lw=1, color='m') 
+	ax1.plot(rudder[:,0], rudder[:,1],lw=1, color='m') 
 	return rudder
 
 
@@ -758,7 +761,7 @@ def plot_sail(boatPos_pol,
 
 	sail = Transform2D(sail, global_origin, sailAngle)
 	sail = Transform2D(sail, global_origin, boatAngle, boatPos_car)
-	plt.plot(sail[:,0], sail[:,1],lw=1, color='k') 
+	ax1.plot(sail[:,0], sail[:,1],lw=1, color='k') 
 	return sail
 
 
@@ -788,10 +791,8 @@ def plot_boat(boatPos_pol,
 
 	#ax1.annotate(str(i), xy=pol2cart(data["position"][i]), xytext=pol2cart(data["position"][i]) + np.array([0.2,0.2]))#, xytext=(3, 1.5),
 	
-	plt.scatter(boatPos_car[x], boatPos_car[y], color='k')
-	plt.plot(boat[:,0], boat[:,1],lw=1, color='b') 
-	
-	
+	ax1.scatter(boatPos_car[x], boatPos_car[y], color='k')
+	ax1.plot(boat[:,0], boat[:,1],lw=1, color='b') 
 	
 	ax1.set_aspect('equal', 'box') # equal aspect ratio, tight limits
 	ax1.axis('equal')              # equal aspect ratio
@@ -914,10 +915,10 @@ def draw_vectors(rudder, sail,
 	for n, (V, c) in enumerate(zip(vectors, colors), 1):
 		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
 		quiver_scale = 2#10 # 50 #10
-		Q = plt.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
+		Q = ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
 		#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 		quiver_key_scale = quiver_scale/10#100
-		plt.quiverkey(Q, 1.05 , 1.1-0.1*n, quiver_key_scale, V[4], coordinates='axes')
+		ax1.quiverkey(Q, 1.05 , 1.1-0.1*n, quiver_key_scale, V[4], coordinates='axes')
 
 
 	# #ax1.autoscale(enable=True, axis='both', tight=None)
@@ -1490,9 +1491,9 @@ def main(rudder_angle = 0 ,
 		 binary_actuator = False,
 		 binary_angles = bin_angles,
 		 save_figs = False,
-		 show_figs = False,
+		 show_figs = True,
 		 fig_location = save_location,
-		 plot_force_coefficients = True,
+		 plot_force_coefficients = False,
 		 output_plot_title = None,
 		 latency = 0 # seconds
 		 ):
@@ -1774,63 +1775,64 @@ def main(rudder_angle = 0 ,
 		# print()
 
 
+	if save_figs or show_figs:
 
 
 
-	global ax1
-	# plot all the data
-	fig1, ax1 = plt.subplots()
-	for i in Time:
+		global ax1
+		# plot all the data
+		fig1, ax1 = plt.subplots()
+		for i in Time:
 
-		#print('boat position', data["position"][i])
+			#print('boat position', data["position"][i])
 
-		# print()
-		# print('saved_sail_force2', data['sail_force'][i])
-		# print('heading', data['heading'][i])
+			# print()
+			# print('saved_sail_force2', data['sail_force'][i])
+			# print('heading', data['heading'][i])
 
-		ax1.annotate(str(i), 
-		             xy=pol2cart(data["position"][i]), 
-		             xytext=pol2cart(data["position"][i]) + np.array([0.2,0.2]))
+			ax1.annotate(str(i), 
+			             xy=pol2cart(data["position"][i]), 
+			             xytext=pol2cart(data["position"][i]) + np.array([0.2,0.2]))
 
-		# ax1.annotate(str(i), xy=data["position"][i], xytext=data["position"][i] + np.array([0.2,0.2]))#, xytext=(3, 1.5),
-            #arrowprops=dict(facecolor='black', shrink=0.05),
-           # )
+			# ax1.annotate(str(i), xy=data["position"][i], xytext=data["position"][i] + np.array([0.2,0.2]))#, xytext=(3, 1.5),
+	            #arrowprops=dict(facecolor='black', shrink=0.05),
+	           # )
 
 
-		plot_boat(data["position"][i], 
-			      data["heading"][i], 
-			      data["sail_angle"][i],
-			      data["rudder_angle"][i])
+			plot_boat(data["position"][i], 
+				      data["heading"][i], 
+				      data["sail_angle"][i],
+				      data["rudder_angle"][i])
 
-		rudder = plot_rudder(data["position"][i], 
-			                 data["heading"][i],
-			                 data["rudder_angle"][i])
+			rudder = plot_rudder(data["position"][i], 
+				                 data["heading"][i],
+				                 data["rudder_angle"][i])
 
-		sail = plot_sail(data["position"][i], 
-			             data["heading"][i], 
-			             data["sail_angle"][i])
+			sail = plot_sail(data["position"][i], 
+				             data["heading"][i], 
+				             data["sail_angle"][i])
 
-		# print()
-		# print('saved_sail_force2', data['sail_force'][i])
-		# print('heading', data['heading'][i])
+			# print()
+			# print('saved_sail_force2', data['sail_force'][i])
+			# print('heading', data['heading'][i])
 
-		draw_vectors(rudder, sail, 
-			         data['sail_lift'][i],   data['rudder_lift'][i],  data['hull_lift'][i],
-			         data['sail_drag'][i],   data['rudder_drag'][i],  data['hull_drag'][i], 
-			         data['sail_force'][i],  data['rudder_force'][i], data['hull_force'][i],
-			         data['position'][i],    data["velocity"][i],
-			         data["true_wind"][i],   data["apparent_wind"][i],
-			         data['surge_force'][i], data['sway_force'][i],   
-			         data["rudder_moment_force"][i], data["hull_moment_force"][i])
+			draw_vectors(rudder, sail, 
+				         data['sail_lift'][i],   data['rudder_lift'][i],  data['hull_lift'][i],
+				         data['sail_drag'][i],   data['rudder_drag'][i],  data['hull_drag'][i], 
+				         data['sail_force'][i],  data['rudder_force'][i], data['hull_force'][i],
+				         data['position'][i],    data["velocity"][i],
+				         data["true_wind"][i],   data["apparent_wind"][i],
+				         data['surge_force'][i], data['sway_force'][i],   
+				         data["rudder_moment_force"][i], data["hull_moment_force"][i])
 
-	#title = f'r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}'	
-	title = output_plot_title
-	plt.title(title)	
+		#title = f'r_{round(ra, 3)} s_{round(sa,3)} tw_{round(tw_pol[0],3)}, {round(tw_pol[1],3)}'	
+		title = output_plot_title
+		plt.title(title)	
 
-	if save_figs:
-		save_fig(fig_location, title)
-	if show_figs:
-		plt.show()
+		if save_figs:
+			save_fig(fig_location, title)
+		if show_figs:
+			plt.show()
 
 	return data
 
