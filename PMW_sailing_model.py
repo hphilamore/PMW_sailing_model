@@ -1490,6 +1490,7 @@ def main(rudder_angle = 0 ,
 		 binary_actuator = False,
 		 binary_angles = bin_angles,
 		 save_figs = False,
+		 show_figs = False,
 		 fig_location = save_location,
 		 plot_force_coefficients = True,
 		 output_plot_title = None,
@@ -1828,7 +1829,7 @@ def main(rudder_angle = 0 ,
 
 	if save_figs:
 		save_fig(fig_location, title)
-	else:
+	if show_figs:
 		plt.show()
 
 	return data
