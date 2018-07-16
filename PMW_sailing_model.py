@@ -1481,7 +1481,7 @@ bin_angles = [0.0, 0.19, 0.77, 0.86, 1.05, 1.05, 1.33, 1.57, 1.57, 1.81, 2.09, 2
 
 steps = 10
 
-def main(rudder_angle = 0 , 
+def main(rudder_angle = 0, 
 		 sail_angle = pi/6,
 		 auto_adjust_sail = False,
 		 Time = np.arange(steps),
@@ -1490,8 +1490,9 @@ def main(rudder_angle = 0 ,
 		 true_wind_polar = [np.array([pi - (pi/6), 5])] * steps,
 		 binary_actuator = False,
 		 binary_angles = bin_angles,
+		 draw_boat_plot = True,
 		 save_figs = False,
-		 show_figs = True,
+		 show_figs = False,
 		 fig_location = save_location,
 		 plot_force_coefficients = False,
 		 output_plot_title = None,
@@ -1775,7 +1776,7 @@ def main(rudder_angle = 0 ,
 		# print()
 
 
-	if save_figs or show_figs:
+	if draw_boat_plot:#save_figs or show_figs:
 
 
 
