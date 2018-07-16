@@ -72,4 +72,3 @@ for i in weather_data:
 	#plt.legend(frameon=False)
 
 plt.show()
-
