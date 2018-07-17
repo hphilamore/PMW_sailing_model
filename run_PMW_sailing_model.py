@@ -24,12 +24,11 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 	                              np.array(pd.read_csv('actuator_data.csv')['end_to_end_angle']) + pi))
 
 
+markers = [".", ",", "o", "v", "^", "<", ">", "1", "2", "3", "4", "8", "s", "p", "P", "*", "h", "H", "+", "x", "X", "D", "d", "|", "_"]
 
 
 
-
-
-def systematic_mode(num_points=10):# , binary=False, Latency=0):
+def systematic_mode(num_points=20):# , binary=False, Latency=0):
 	"""
 	Systematically cycle through combination of each listed:
 		- wind direction
@@ -81,14 +80,20 @@ def systematic_mode(num_points=10):# , binary=False, Latency=0):
 							     latency = l)
 
 							
-							print(np.vstack(d['position'])[:,0])
-							print(np.vstack(d['position'])[:,1])
-							print(np.vstack(d['position']))
+							# print(np.vstack(d['position'])[:,0])
+							# print(np.vstack(d['position'])[:,1])
+							# print(np.vstack(d['position']))
+							print('heading')
+							print(d['heading'])
 							positions = np.vstack([pol2cart(p) for p in d['position']])
-
-
+							full_turn = next(x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi)
+							positions = positions[:full_turn]
 							ax.plot(positions[:,0], positions[:,1], '-o', label=str(twd))	
 							ax2.plot(positions[:,0], positions[:,1], 'o', label=str(twd))	
+
+							#full_turn = next(x[0] for x in enumerate(d['heading']) if x[1] > pi)
+
+					
 
 							# ax.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], '-o', label=str(twd))	
 							# ax2.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], 'o', label=str(twd))	

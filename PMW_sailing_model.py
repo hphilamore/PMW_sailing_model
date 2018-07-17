@@ -373,7 +373,7 @@ def moment_force_angle(part_angle, incident_vector_polar, boat_angle):
 	V_pol[0] -= boat_angle
 
 	if not np.allclose(four_quad(part_angle), four_quad(boat_angle)):
-		print('not hull')
+		#print('not hull')
 		# incident vector in part RF
 		V_pol[0] -= part_angle
 	
@@ -1402,7 +1402,7 @@ def param_solve(#Z_state,
 	if auto_adjust_sail:
 		time_now = t 
 		if time_now - start_time >= L:
-			print('adjusting sails, t= ', t)
+			#print('adjusting sails, t= ', t)
 			set_sail_angle(binary_actuator, binary_angles)
 			start_time = t
 			
