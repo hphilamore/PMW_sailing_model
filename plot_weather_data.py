@@ -41,8 +41,8 @@ for i in weather_data:
 	windAngle = np.deg2rad(df['windAngle(deg)'])
 	# original time points, converted mins to s
 	time = np.arange(len(df))# * 60
-	print('time', time)
-	print(len(time))
+	#print('time', time)
+	#print(len(time))
 	
 	# plot data to check
 	fig1, ax1 = plt.subplots()	

@@ -219,7 +219,7 @@ def appWind(tw_pol, v_pol):
 
 
 
-def attack_angle(part_angle, boat_angle, incident_vector_polar, rudder=False):
+def attack_angle(part_angle, boat_angle, incident_vector_polar):
 	"""
 	Finds the angle of attack between:
 	- a surface (e.g. sail, hull, rudder)
@@ -234,27 +234,27 @@ def attack_angle(part_angle, boat_angle, incident_vector_polar, rudder=False):
 		alpha = 0 		    # angle of attack defaults to 0
 
 	else:		
-		if rudder:
-			print('part_angle', part_angle)
-			print('boat_angle', boat_angle)
+		#if rudder:
+			#print('part_angle', part_angle)
+			#print('boat_angle', boat_angle)
 
 		# convert angles to global frame
 		part_angle += boat_angle
-		if rudder:
-			print('global part angle', part_angle)
+		#if rudder:
+			#print('global part angle', part_angle)
 
 		# check angle still expressed in 4 quadrants
 		part_angle = four_quad(part_angle)
-		if rudder:
-			print('four_quad part angle', part_angle)
+		#if rudder:
+			#print('four_quad part angle', part_angle)
 
 		# convert angles to cartesian
 		part_car = pol2cart([part_angle, 1])
 		#v_fluid_car = pol2cart(V_pol)
 		v_fluid_car = pol2cart(np.array([V_pol[0], 1]))
-		if rudder:
-			print('part car', part_car)
-			print('fluid car', v_fluid_car)
+		#if rudder:
+			#print('part car', part_car)
+			#print('fluid car', v_fluid_car)
 
 
 		# use dot product to find angle cosine
@@ -264,15 +264,15 @@ def attack_angle(part_angle, boat_angle, incident_vector_polar, rudder=False):
 
 		# round cosalpha to 15dp to deal with floating point error
 		cosalpha = round(cosalpha, 15)
-		if rudder:
-			print('cosalpha', cosalpha)
+		#if rudder:
+			#print('cosalpha', cosalpha)
 
 		# print('part', U)
 		# print('fluid', V)
 		# print('cosalpha', cosalpha)
 		alpha = abs(np.arccos(cosalpha))
-		if rudder:
-			print('alpha', alpha)
+		#if rudder:
+			#print('alpha', alpha)
 
 		# find smallest of two possible angles
 		if alpha > pi/2:
@@ -933,9 +933,9 @@ def dvdt(Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	"""
 
 	boat_angle=four_quad(boat_angle)
-	print(boat_angle)
+	#print(boat_angle)
 	boat_angle=np.round(boat_angle, 8)
-	print(boat_angle)
+	#print(boat_angle)
 	# initial vel cartesian
 	#print('vel_pol_GRF_init_', v_pol)
 	#v_car = pol2cart(v_pol)
@@ -953,10 +953,10 @@ def dvdt(Fs_pol, Fr_pol, Fh_pol, boat_angle):
 	Fr_car_LRF = pol2cart(Fr_pol_LRF)
 	Fh_car_LRF = pol2cart(Fh_pol_LRF)
 
-	print('Fs_car', Fs_car_LRF)
-	print('Fr_car', Fr_car_LRF)
-	print('Fh_car', Fh_car_LRF)
-	print('F_car', Fs_car_LRF + Fr_car_LRF + Fh_car_LRF)
+	#print('Fs_car', Fs_car_LRF)
+	#print('Fr_car', Fr_car_LRF)
+	#print('Fh_car', Fh_car_LRF)
+	#print('F_car', Fs_car_LRF + Fr_car_LRF + Fh_car_LRF)
 	#v_car = pol2cart(v_pol)
 
 	# print('local forces:')
@@ -1261,12 +1261,12 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 	# M_inertia = inertial_moment(Fh_pol, boat_angle)
 	# print('M_inertia', M_inertia)
 	M_inertia = moment(Fh_pol, boat_angle, boat_angle, hull_moment_arm, save_name='hull_moment_force')
-	print('M_rudder', M_rudder)
-	print('M_inertia', M_inertia)
+	#print('M_rudder', M_rudder)
+	#print('M_inertia', M_inertia)
 
 	#print('M_rudder', M_rudder)
 	M = M_rudder + M_inertia
-	print('M', M)
+	#print('M', M)
 	#print(np.rad2deg(M))
 	#print()
 
@@ -1285,7 +1285,7 @@ def dwdt(Fr_pol, rudder_angle, boat_angle, Fh_pol):
 
 	# convert to acceleration by dividing moment by mass moment of area
 	acc_ang = M / Iyaw
-	print('acc_ang', acc_ang)
+	#print('acc_ang', acc_ang)
 
 	return acc_ang
 
@@ -1637,8 +1637,8 @@ def main(rudder_angle = 0,
 
 	# solve parameters at each Timestep
 	for t, tw_pol in zip (Time, true_wind_polar):
-		print()
-		print(t)
+		#print()
+		#print(t)
 		#print()
 		# data["sail_angle"].append(sa)
 		# data["rudder_angle"].append(ra)
@@ -1674,16 +1674,16 @@ def main(rudder_angle = 0,
 			                binary_angles, 
 			                plot_force_coefficients)
 
-		print('acc_LRF_pol', acc_LRF)
+		#print('acc_LRF_pol', acc_LRF)
 
 		# convert global velocity to local velocity
 		v_pol_LRF = np.array( [v_pol[0]-theta, v_pol[1]] )
-		print('v_pol_LRF_init', v_pol_LRF)
+		#print('v_pol_LRF_init', v_pol_LRF)
 
 		# update angular velocity and angle
 		w += ang_acc
 		theta += w
-		print('theta', theta)
+		#print('theta', theta)
 
 		# # convert global velocity to local velocity
 		# v_pol_LRF = np.array( [v_pol[0]-theta, v_pol[1]] )
@@ -1691,15 +1691,15 @@ def main(rudder_angle = 0,
 
 		# update local velocity
 		v_pol_LRF = cart2pol( pol2cart(v_pol_LRF) + pol2cart(acc_LRF) )
-		print('v_pol_LRF', v_pol_LRF)
-		print('v_cart_LRF', pol2cart(v_pol_LRF))
+		#print('v_pol_LRF', v_pol_LRF)
+		#print('v_cart_LRF', pol2cart(v_pol_LRF))
 
 		# convert back to global velocity to calculate new forces
 		v_pol = np.array( [v_pol_LRF[0]+theta, v_pol_LRF[1]] )
-		print('v_pol_GRF', v_pol)
+		#print('v_pol_GRF', v_pol)
 
 		pos_pol = cart2pol( pol2cart(pos_pol) + pol2cart(v_pol) )
-		print('pos_pol_GRF', pos_pol)
+		#print('pos_pol_GRF', pos_pol)
 		
 
 		# # update global position
@@ -1795,9 +1795,13 @@ def main(rudder_angle = 0,
 			             xy=pol2cart(data["position"][i]), 
 			             xytext=pol2cart(data["position"][i]) + np.array([0.2,0.2]))
 
+			print(data["position"][i])
+
 			# ax1.annotate(str(i), xy=data["position"][i], xytext=data["position"][i] + np.array([0.2,0.2]))#, xytext=(3, 1.5),
 	            #arrowprops=dict(facecolor='black', shrink=0.05),
 	           # )
+
+
 
 
 			plot_boat(data["position"][i], 

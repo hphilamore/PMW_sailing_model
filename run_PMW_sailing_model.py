@@ -1,6 +1,6 @@
 from PMW_sailing_model import *
 import numpy as np
-from numpy import pi
+from numpy import pi, sin, cos, rad2deg, deg2rad, arctan2, sqrt, exp
 import os, time, fnmatch
 import random
 import pandas as pd
@@ -77,15 +77,21 @@ def systematic_mode(num_points=10):# , binary=False, Latency=0):
 							     show_figs = False, #True,
 							     fig_location = save_location,
 							     plot_force_coefficients = False,
-							     output_plot_title = f'twd:{twd}, tws:{tws}, r:{r}, s:{s}, , binary: {binary}',
+							     output_plot_title = f'binary: {b}, latency: {l}s, twd: {twd}rads, tws:{tws}m/s, rud ang:{r}rads, sail ang:{s}rads' ,
 							     latency = l)
 
 							
 							print(np.vstack(d['position'])[:,0])
 							print(np.vstack(d['position'])[:,1])
 							print(np.vstack(d['position']))
-							ax.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], '-o', label=str(twd))	
-							ax2.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], 'o', label=str(twd))	
+							positions = np.vstack([pol2cart(p) for p in d['position']])
+
+
+							ax.plot(positions[:,0], positions[:,1], '-o', label=str(twd))	
+							ax2.plot(positions[:,0], positions[:,1], 'o', label=str(twd))	
+
+							# ax.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], '-o', label=str(twd))	
+							# ax2.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], 'o', label=str(twd))	
 							#data.append(d)
 							#plt.plot(np.vstack(data['position'][0], np.vstack(data['position'][1])))
 		ax2.legend()
