@@ -46,6 +46,8 @@ def systematic_mode(num_points=20):# , binary=False, Latency=0):
 	sail_angles = [0]
 	#sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
 
+	# 
+
 
 	T = np.arange(num_points)
 	timestep = 1
