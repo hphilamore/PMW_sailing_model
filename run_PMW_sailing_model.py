@@ -94,7 +94,8 @@ def run_model(twp,
 	data = []
 
 
-	for b, li in binary, lines:
+	for b, li in zip(binary, lines):
+		print(li)
 		for l, ma in zip(latency, markers):
 			for r in rudder_angles:
 				for s in sail_angles:
@@ -115,13 +116,14 @@ def run_model(twp,
 					     latency = l)
 
 					positions = np.vstack([pol2cart(p) for p in d['position']])
-					print([x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi])
+					#print([x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi])
 					full_turn = next((x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi), len(d['heading']))
-					print('full_turn', full_turn)
+					#print('full_turn', full_turn)
 					positions = positions[: full_turn]
 					#ax.plot(positions[:,0], positions[:,1], '-o')	
 					#axes.plot(positions[:,0], positions[:,1], linestyle=li, color=line_colour, marker=ma)	
-					axes.plot(positions[:,0], positions[:,1], marker=ma, label=str(round(twp[0][0],3)))	
+					print('li', li)
+					axes.plot(positions[:,0], positions[:,1], marker=ma, linestyle=li, label=str(round(twp[0][0],3)))	
 
 	#plt.show()
 
