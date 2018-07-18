@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import splrep
 from scipy.interpolate import splev
 import scipy.interpolate
+import matplotlib.cm as cm
 
 
 # set up a folder to store data
@@ -24,7 +25,7 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 	                              np.array(pd.read_csv('actuator_data.csv')['end_to_end_angle']) + pi))
 
 
-markers = [".", ",", "o", "v", "^", "<", ">", "1", "2", "3", "4", "8", "s", "p", "P", "*", "h", "H", "+", "x", "X", "D", "d", "|", "_"]
+
 
 
 
@@ -38,15 +39,20 @@ def systematic_mode(num_points=20):# , binary=False, Latency=0):
 	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
 	"""
 	# wind directions
-	binary = [False]#[False, True]
-	latency = [0]#[0, 5, 10]
-	true_wind_dirs = [0, pi/6, pi/3]#, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
+	#binary = [False, True]#[False, True]
+	latency = [2, 5, 10]
+	true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
+	true_wind_dirs = [0, pi/4, pi/2, pi*3/4, pi, pi+pi/4, pi+pi/2, pi+pi*3/4, 2*pi]
+	true_wind_dirs = [pi+pi/2]#, pi+pi/2, pi+pi*3/4, 2*pi]
 	true_wind_speed = [5]
 	rudder_angles = [pi/8]
 	sail_angles = [0]
 	#sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
 
-	# 
+	# plot features
+	lines = ['-', ':']
+	markers = ["o",   "<",  "2", "3", "v", "4", "8", "s", "p", "P", "^", "*", "1","h", "H", "+", "x", "X", "D", ">",  "d", "|", "_"]
+	colours = cm.rainbow(np.linspace(0, 1, len(true_wind_dirs)))
 
 
 	T = np.arange(num_points)
@@ -56,15 +62,19 @@ def systematic_mode(num_points=20):# , binary=False, Latency=0):
 	fig, ax = plt.subplots()
 	fig2, ax2 = plt.subplots()
 
+	binary=[True, False]
+
 
 	# for b, l in zip(B, L):
-	for b in binary:
-		for l in latency:
-			for twd in true_wind_dirs:
+	for n, (b, li) in enumerate(zip(binary, lines)):
+		print(b)
+		for l, ma in zip(latency, markers):
+			for twd, co in zip(true_wind_dirs, colours):
 				print('WIND DIR =', twd)
 				for tws in true_wind_speed:
 					for r in rudder_angles:
 						for s in sail_angles:
+							print('binary=', n)
 							d = main(rudder_angle = r, 
 							     sail_angle = s,
 							     auto_adjust_sail = True,
@@ -73,7 +83,7 @@ def systematic_mode(num_points=20):# , binary=False, Latency=0):
 							     true_wind_polar = [np.array([twd, tws])] * num_points,
 							     binary_actuator = b,
 							     binary_angles = four_bit_sail_angles,
-							     draw_boat_plot = True,
+							     draw_boat_plot = False,
 							     save_figs = False,#True,
 							     show_figs = False, #True,
 							     fig_location = save_location,
@@ -85,13 +95,26 @@ def systematic_mode(num_points=20):# , binary=False, Latency=0):
 							# print(np.vstack(d['position'])[:,0])
 							# print(np.vstack(d['position'])[:,1])
 							# print(np.vstack(d['position']))
-							print('heading')
-							print(d['heading'])
+							#print('heading')
+							#print(d['heading'])
 							positions = np.vstack([pol2cart(p) for p in d['position']])
-							full_turn = next(x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi)
-							positions = positions[:full_turn]
-							ax.plot(positions[:,0], positions[:,1], '-o', label=str(twd))	
-							ax2.plot(positions[:,0], positions[:,1], 'o', label=str(twd))	
+							print([x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi])
+							#print(len([p for p in d['heading'] if abs(p)<pi]))
+								# TODO this is more elegent but not sure how it is working
+							full_turn = next((x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi), len(d['heading']))
+							
+							#full_turn = next((x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi)) 
+							# if (full_turn == len(d['heading']) - 1):
+							# 	full_turn = 0
+							# print(next((i for i in range(10) if i**2 == 17), None))
+							# except:
+							# 	print('timeout')
+							# 	full_turn = 0
+							print('full_turn', full_turn)
+							positions = positions[: full_turn]
+							ax.plot(positions[:,0], positions[:,1], '-o', label=str(round(twd,3)))	
+							#ax2.plot(positions[:,0], positions[:,1], 'o', label=str(twd))	
+							ax2.plot(positions[:,0], positions[:,1], linestyle=li, color=co, marker=ma, label=str(twd))	
 
 							#full_turn = next(x[0] for x in enumerate(d['heading']) if x[1] > pi)
 
@@ -101,12 +124,12 @@ def systematic_mode(num_points=20):# , binary=False, Latency=0):
 							# ax2.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], 'o', label=str(twd))	
 							#data.append(d)
 							#plt.plot(np.vstack(data['position'][0], np.vstack(data['position'][1])))
-		ax2.legend()
-		plt.show()
+		#ax2.legend()
+	plt.show()
 
 
 	
-	print(data)
+	#print(data)
 
 def random_mode(num_points=50, binary=True, Latency=0):
 	"""
@@ -354,6 +377,33 @@ def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
 
 	return T, twp, T_ticks
 
+
+
+
+def curvature(points):
+	"""
+	https://stackoverflow.com/questions/28269379/curve-curvature-in-numpy
+	"""
+	dx_dt = np.gradient(a[:, 0])
+	dy_dt = np.gradient(a[:, 1])
+	velocity = np.array([ [dx_dt[i], dy_dt[i]] for i in range(dx_dt.size)])
+	ds_dt = np.sqrt(dx_dt * dx_dt + dy_dt * dy_dt)
+	tangent = np.array([1/ds_dt] * 2).transpose() * velocity
+	tangent_x = tangent[:, 0]
+	tangent_y = tangent[:, 1]
+	deriv_tangent_x = np.gradient(tangent_x)
+	deriv_tangent_y = np.gradient(tangent_y)
+	dT_dt = np.array([ [deriv_tangent_x[i], deriv_tangent_y[i]] for i in range(deriv_tangent_x.size)])
+	length_dT_dt = np.sqrt(deriv_tangent_x * deriv_tangent_x + deriv_tangent_y * deriv_tangent_y)
+	normal = np.array([1/length_dT_dt] * 2).transpose() * dT_dt
+	d2s_dt2 = np.gradient(ds_dt)
+	d2x_dt2 = np.gradient(dx_dt)
+	d2y_dt2 = np.gradient(dy_dt)
+	curvature = np.abs(d2x_dt2 * dy_dt - dx_dt * d2y_dt2) / (dx_dt * dx_dt + dy_dt * dy_dt)**1.5
+	t_component = np.array([d2s_dt2] * 2).transpose()
+	n_component = np.array([curvature * ds_dt * ds_dt] * 2).transpose()
+	acceleration = t_component * tangent + n_component * normal
+	return curvature
 
 # # T, twp, T_ticks = cycle_wind_data()
 # T, twp, T_ticks = random_wind_data(num_points=5)
