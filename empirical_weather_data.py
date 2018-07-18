@@ -36,12 +36,14 @@ def import_weather_data():
 	for i in weather_data:
 		#select first 50mins of data
 		weather_data[i] = weather_data[i][0:50]
-		df = weather_data[i]
+		#df = weather_data[i]
 		#print(df, weather_data[df])
-		windSpeed = df['windspeed(m/s)']
-		windAngle = np.deg2rad(df['windAngle(deg)'])
+		weather_data[i]['windAngle(rad)'] = np.deg2rad(weather_data[i]['windAngle(deg)'])
+
+		windSpeed = weather_data[i]['windspeed(m/s)']
+		windAngle = weather_data[i]['windAngle(rad)']
 		# original time points, converted mins to s
-		time = np.arange(len(df))# * 60
+		Time = np.arange(len(weather_data[i])) #* 60
 		#print('time', time)
 		#print(len(time))
 		
@@ -49,30 +51,34 @@ def import_weather_data():
 		fig1, ax1 = plt.subplots()	
 		ax1.axhline(y=0, color='k', linewidth=1.0, alpha=0.5)
 		ax1.axvline(x=0, color='k', linewidth=1.0)
-		plt.plot(time, windSpeed, label=f'Velocity')
-		plt.xlabel('time (mins')
+		plt.plot(Time, windSpeed, label=f'Velocity')
+		plt.xlabel('time (min)')
 		plt.ylabel('Wind Velocity (m/s)')
 		plt.xlim([0, 50])
 		plt.ylim([-0.4, 4.5])
+
 
 		posx, posy = 0.8, 0.9
 		if i == 'Paddy B':
 			posy = 0.1
 
-		
 
-		for t, A, S in zip(time, windAngle, windSpeed):
+		for t, A, S in zip(Time, windAngle, windSpeed):
 			quiver_scale = 20
 			angle = pol2cart(np.array([A, 1]))
 			Q = plt.quiver(t, S, angle[0], angle[1], scale=quiver_scale)
 			#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 			quiver_key_scale = quiver_scale/10#100
 			plt.quiverkey(Q, posx, posy, quiver_key_scale, 'Wind Angle', coordinates='axes', labelpos='E')
+			
 
 		plt.title(i)
+		#plt.show()
+		plt.close()
 		#plt.legend(frameon=False)
+		print(weather_data)
+	
 
-	plt.show()
 	return weather_data
 
-import_weather_data()
+#weather_data = import_weather_data()
