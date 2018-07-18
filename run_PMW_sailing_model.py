@@ -28,6 +28,103 @@ four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end
 
 
 
+def systematic(num_points=20, timestep=1):
+	true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
+	# true_wind_dirs = [0, pi/4, pi/2, pi*3/4, pi, pi+pi/4, pi+pi/2, pi+pi*3/4, 2*pi]
+	# true_wind_dirs = [pi+pi/2]#, pi+pi/2, pi+pi*3/4, 2*pi]
+	true_wind_speed = [5]
+
+	steps = np.arange(num_points)
+	time_ticks = (steps[0], steps[-1], timestep) # tuple input to graph plot ticks function
+
+	colours = cm.rainbow(np.linspace(0, 1, len(true_wind_dirs)))
+
+	fig, ax = plt.subplots()
+
+	for tws in true_wind_speed:
+		for twd, c in zip(true_wind_dirs, colours):
+			true_wind_polar = [np.array([twd, tws])] * num_points
+			print(true_wind_polar)
+			run_model(true_wind_polar, 
+				steps, 
+				time_ticks, 
+				ax, 
+				c)
+
+	
+	ax.legend()
+	plt.show()
+			
+
+	#title = f'binary: {b}, latency: {l}s, twd: {true_wind_polar[0]}rads, tws:{true_wind_polar[1]}m/s, rud ang:{r}rads, sail ang:{s}rads'
+
+
+		
+
+
+
+
+def run_model(twp,
+			  steps,
+			  timeticks,	
+			  axes,
+			  line_colour = 'k',
+			  latency = [0],#, 2, 4, 6],
+			  binary = [True, False],
+			  rudder_angles = [pi/8],
+			  sail_angles = [0],
+			  ):# , binary=False, Latency=0):
+	"""
+	Systematically cycle through combination of each listed:
+		- wind direction
+		- wind speed
+		- sail angle (option to auto adjust to wind angle within program)
+		- rudder angle 
+	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
+	"""
+
+
+	# set up output figure
+	lines = ['-', ':']
+	markers = ["o", "<",  "2", "3", "v", "4", "8", "s", "p", "P", "^", "*", "1","h", "H", "+", "x", "X", "D", ">",  "d", "|", "_"]
+	
+	# fig, ax = plt.subplots()
+	# fig2, ax2 = plt.subplots()
+
+	data = []
+
+
+	for b, li in binary, lines:
+		for l, ma in zip(latency, markers):
+			for r in rudder_angles:
+				for s in sail_angles:
+					d = main(rudder_angle = r, 
+					     sail_angle = s,
+					     auto_adjust_sail = True,
+					     Time = steps,
+					     time_ticks = timeticks,
+					     true_wind_polar = twp, #[np.array([twd, tws])] * num_points,
+					     binary_actuator = b,
+					     binary_angles = four_bit_sail_angles,
+					     draw_boat_plot = False,
+					     save_figs = False,#True,
+					     show_figs = False, #True,
+					     fig_location = save_location,
+					     plot_force_coefficients = False,
+					     #output_plot_title = plot_title,#f'binary: {b}, latency: {l}s, twd: {true_wind_polar[0]}rads, tws:{true_wind_polar[1]}m/s, rud ang:{r}rads, sail ang:{s}rads' ,
+					     latency = l)
+
+					positions = np.vstack([pol2cart(p) for p in d['position']])
+					print([x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi])
+					full_turn = next((x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi), len(d['heading']))
+					print('full_turn', full_turn)
+					positions = positions[: full_turn]
+					#ax.plot(positions[:,0], positions[:,1], '-o')	
+					#axes.plot(positions[:,0], positions[:,1], linestyle=li, color=line_colour, marker=ma)	
+					axes.plot(positions[:,0], positions[:,1], marker=ma, label=str(round(twp[0][0],3)))	
+
+	#plt.show()
+
 
 def systematic_mode(num_points=20):# , binary=False, Latency=0):
 	"""
@@ -434,7 +531,8 @@ def curvature(points):
 # for b, l in zip(B, L):
 #systematic_mode(binary=False)#, Latency=l)
 
-systematic_mode()#, Latency=l)
+#systematic_mode()#, Latency=l)
+systematic()
 
 
 

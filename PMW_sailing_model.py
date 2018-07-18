@@ -1495,7 +1495,7 @@ def main(rudder_angle = 0,
 		 show_figs = False,
 		 fig_location = save_location,
 		 plot_force_coefficients = False,
-		 output_plot_title = None,
+		 #output_plot_title = None,
 		 latency = 0 # seconds
 		 ):
 
@@ -1504,6 +1504,8 @@ def main(rudder_angle = 0,
 
 	Takes optional inputs for true wind angle, sail angle and rudder angle
 	"""
+	print(len(true_wind_polar))
+	print('true_wind_polar', true_wind_polar)
 
 	global rho_air, rho_water
 	# boat geometry
@@ -1522,6 +1524,7 @@ def main(rudder_angle = 0,
 	global t, start_time, time_now
 	global L # latency
 
+	
 	x, y = 0, 1
 
 	L = latency
@@ -1607,6 +1610,9 @@ def main(rudder_angle = 0,
 
 	# Time = np.arange(0, 20, 1)
 	# Time = np.arange(10)
+
+	output_plot_title = f'binary: {binary_actuator}, latency: {latency}s, twd: {true_wind_polar[0]}rads, tws:{true_wind_polar[1]}m/s, rud ang:{rudder_angle}rads, sail ang:{sail_angle}rads, auto sail:{auto_adjust_sail}'
+
 
 	# check the number of wind coordinates given is the same as the number of timesteps
 	if len(true_wind_polar) != len(Time):
