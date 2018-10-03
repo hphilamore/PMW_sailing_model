@@ -914,8 +914,8 @@ def draw_vectors(rudder, sail,
 	#for n, (V, c, label) in enumerate(zip(vectors, colors, labels), 1):
 	for n, (V, c) in enumerate(zip(vectors, colors), 1):
 		# ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=5)
-		quiver_scale = 2#10 # 50 #10
-		Q = ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale)
+		quiver_scale = 40#2#10 # 50 #10
+		Q = ax1.quiver(V[0], V[1], V[2], V[3], color=c, scale=quiver_scale, units='x')
 		#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 		quiver_key_scale = quiver_scale/10#100
 		ax1.quiverkey(Q, 1.05 , 1.1-0.1*n, quiver_key_scale, V[4], coordinates='axes')
@@ -1325,11 +1325,16 @@ def set_sail_angle(binary_actuator, binary_angles):
 
 
 	sa = four_quad(sa)
+	sa_ideal = sa
 
 	##print('sa', sa)
 	# if sail is binary actuator, use closest avilable sail angle	
 	if binary_actuator:
 		sa = min(binary_angles, key=lambda x:abs(x-sa))
+
+	sa_real = sa
+
+	data['sail_angle_error']= abs(four_quad(sa_ideal) - four_quad(sa_real))
 	##print('sa', sa)
 
 # def dthdt(w, Fr_pol, rudder_angle, theta):
@@ -1405,6 +1410,7 @@ def param_solve(#Z_state,
 			##print('adjusting sails, t= ', t)
 			set_sail_angle(binary_actuator, binary_angles)
 			start_time = t
+
 			
 
 
@@ -1483,7 +1489,7 @@ steps = 10
 
 def main(rudder_angle = 0, 
 		 sail_angle = pi/6,
-		 auto_adjust_sail = False,
+		 auto_adjust_sail = True,
 		 Time = np.arange(steps),
 		 # true_wind_polar = np.array([pi - (pi/6), 5]),
 		 true_wind_polar = [np.array([pi - (pi/6), 5])] * steps,
@@ -1503,8 +1509,8 @@ def main(rudder_angle = 0,
 
 	Takes optional inputs for true wind angle, sail angle and rudder angle
 	"""
-	print(len(true_wind_polar))
-	print('true_wind_polar', true_wind_polar)
+	# print(len(true_wind_polar))
+	# print('true_wind_polar', true_wind_polar)
 
 	global rho_air, rho_water
 	# boat geometry
@@ -1629,7 +1635,8 @@ def main(rudder_angle = 0,
 	        'sail_drag' : [],   'rudder_drag' : [],  'hull_drag' : [],
 	        'sail_force' : [],  'rudder_force' : [], 'hull_force' : [],
 	        'surge_force' : [], 'sway_force' : [],   
-	        'rudder_moment_force' : [], 'hull_moment_force' : [],
+	        'rudder_moment_force' : [], 'hull_moment_force' : [], 
+	        'angle_error' : []
 	        }
 
 

@@ -25,6 +25,12 @@ def pol2cart(coords):
 
 
 def import_weather_data():
+
+	'''
+	Imports empirical weather data.
+	This function can be run by itself if you just want to view wetaher
+	'''
+
 	weather_data = {}
 	weather_data['Paddy A'] = pd.read_csv('weather_data_paddy1_17-02-18_19-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]# weather_data_paddyA
 	weather_data['Paddy B'] = pd.read_csv('weather_data_paddy1_17-02-18_18-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]#weather_data_paddyB
@@ -34,7 +40,7 @@ def import_weather_data():
 
 
 	for i in weather_data:
-		#select first 50mins of data
+		#select first 50x2=100 mins of data
 		weather_data[i] = weather_data[i][0:50]
 		#df = weather_data[i]
 		#print(df, weather_data[df])
@@ -70,15 +76,16 @@ def import_weather_data():
 			#plt.quiverkey(Q, -1.5, n/2-2, 0.25, label, coordinates='data')
 			quiver_key_scale = quiver_scale/10#100
 			plt.quiverkey(Q, posx, posy, quiver_key_scale, 'Wind Angle', coordinates='axes', labelpos='E')
-			
+
 
 		plt.title(i)
 		#plt.show()
 		plt.close()
 		#plt.legend(frameon=False)
-		print(weather_data)
+		#print(weather_data)
 	
 
 	return weather_data
 
-#weather_data = import_weather_data()
+# run this to just view ewather data
+# weather_data = import_weather_data()

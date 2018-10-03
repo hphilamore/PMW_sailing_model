@@ -12,6 +12,36 @@ import scipy.interpolate
 import matplotlib.cm as cm
 import itertools
 
+'''
+Model of a sailing boat (or portuguese man of war jellyfish).
+
+
+One of three function calls will runthe model:
+	- systematic() : cycles through incremental combinations of sail and wind angle
+	- random wind() : wind speed and direction are generated randomly
+	- empirical() : wind speed and direction from field data.
+
+
+Function run_model has the following user definable parameters:
+[ In each case, if a list is given the program will run each possible combination of values from all lists ]
+	latency  			: timesteps sail angle takes to react to wind direction 
+	binary 				: True or False - sail has discrete set of possible angular positions
+	rudder_angles 		: Angle of rudder throughout the 
+	sail_angles 		: (starting) Angle of sail
+	auto_adjust_sail	: Sail position responds to incoming wind angle
+
+
+Returns data at each timestep as a data structure, d.
+
+The boat position at each timestep is plotted. 
+
+
+TODO: Rewrite as object oriented model where eah run mode is a different sub-class 
+TODO: Use ODE solver so that force doesn't get huge
+TODO: add tacking (rudder angle is a function of postion)
+
+
+'''
 
 # set up a folder to store data
 for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
@@ -21,26 +51,50 @@ for root, dirs, files in os.walk("/Users/hemma/Documents/Projects"):
 				os.makedirs(save_location, exist_ok=True)
 
 
+fontsize = 12
 
+
+# import a list of possible sail angles
+# TODO: have the model of the actutor run to feedin these values rather than importing them from a data file
 # four_bit_sail_angles = pd.read_csv('actuator_data.csv')['end_to_end_angle']
 four_bit_sail_angles = np.hstack((np.array(pd.read_csv('actuator_data.csv')['end_to_end_angle']),
 	                              np.array(pd.read_csv('actuator_data.csv')['end_to_end_angle']) + pi))
 
 
+def four_quad(angle):
+	"""
+	Converts angle to 4 quadrants, positive angles 0 --> 2*pi
+	Right hand coordinate system. 
+	"""
+	if angle > 2*pi:
+		angle -= 2*pi
+
+	elif angle < 0:
+		angle += 2*pi
+
+	return angle 
 
 
 
-def systematic(time_points=20):
-	true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
-	# true_wind_dirs = [0, pi/4, pi/2, pi*3/4, pi, pi+pi/4, pi+pi/2, pi+pi*3/4, 2*pi]
+def systematic(time_points=30):
+	'''
+	Runs the model for all combinations of: 
+		- wind speed in list
+		- wind angle in list
+	over number of time points given. 
+	'''
+
+	#true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
+	true_wind_dirs = [pi*3/4, pi/2, pi/4, 0]
 	# true_wind_dirs = [pi+pi/2]#, pi+pi/2, pi+pi*3/4, 2*pi]
 	true_wind_speed = [5]
 
 	Time = np.arange(time_points)
 
-	colours = cm.rainbow(np.linspace(0, 1, len(true_wind_dirs)))
+	colours = cm.cool(np.linspace(0, 1, len(true_wind_dirs)))
 
 	fig, ax = plt.subplots()
+	#fig_, ax_ = plt.subplots()
 
 	for tws in true_wind_speed:
 		for twd, c in zip(true_wind_dirs, colours):
@@ -50,23 +104,20 @@ def systematic(time_points=20):
 					  Time, 
 					  ax, 
 					  c)
-
-	
-	ax.legend()
+	#ax.legend(bbox_to_anchor=(1.05, 1), loc=2, frameon=False)
+	#fig.savefig('samplefigure', bbox_extra_artists=(lgd,), bbox_inches='tight')
+	handles, labels = ax.get_legend_handles_labels()
+	lgd = ax.legend(handles, labels, bbox_to_anchor=(0.4, -0.1), frameon=False)
+	plt.savefig(f'{save_location}/plot.png', bbox_extra_artists=(lgd,), bbox_inches='tight')
+	#ax.legend(frameon=False)
 	plt.show()
 
 
 
 def random_wind(time_points=20, binary=True):
 	"""
-	String of randomly generated wind values
-	Systematically cycle through combination of each listed:
-		- sail angle (option to auto adjust to wind angle within program)
-		- rudder angle 
-	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
+	Generates a random combination of wind speed and angle at each time point
 	"""
-	# sail_angles = [0]
-	# rudder_angles = [pi/4]
 
 	angles = [random.uniform(0, 2*pi) for i in range(time_points)]
 	mags = [random.normalvariate(5, 2) for i in range(time_points)]
@@ -87,21 +138,33 @@ def random_wind(time_points=20, binary=True):
 	#title = f'binary: {b}, latency: {l}s, twd: {true_wind_polar[0]}rads, tws:{true_wind_polar[1]}m/s, rud ang:{r}rads, sail ang:{s}rads'
 
 
-def empirical(time_points=20, generated_points_per_sec=0.5):
+def empirical(time_points=100, generated_points_per_sec=0.5):
+	'''
+	Wind speed and direction taken from a section of empirical data.
+	Empirical data timestep = 2mins so data interolated to give generated_points_per_sec in plac of 1 point per 120sec (empirical data).
+	Noise added using function shown below. 
+
+	'''
+
+
 	weather_data = import_weather_data()
 	#Time = np.arange(len(weather_data)) * 60
 
 	colours = cm.rainbow(np.linspace(0, 1, len(weather_data)))
 
 	fig, ax = plt.subplots()
+	#fig_, ax_ = plt.subplots()
 
-	keys = list(weather_data.keys())
+	keys = list(weather_data.keys())[1:2]#[:-1]#[:-1]
+	#print(keys)
+
 
 	for key, c in zip(keys, colours):
 
+		#print(key)
+
 		df = weather_data[key]
-		print(df['windAngle(deg)'])
-		angle = list(df['windAngle(deg)'])
+		angle = list(df['windAngle(rad)'])
 		speed = list(df['windspeed(m/s)'])
 		angle, speed = interpolate_add_noise(angle, speed, generated_points_per_sec)
 
@@ -112,6 +175,9 @@ def empirical(time_points=20, generated_points_per_sec=0.5):
 		true_wind_polar = list(itertools.chain.from_iterable(itertools.repeat(twp, 3) for twp in true_wind_polar))[:time_points]
 
 		true_wind_polar = np.vstack(true_wind_polar)
+		#print(true_wind_polar)
+
+		#print(true_wind_polar)
 
 		Time = np.arange(time_points)
 
@@ -146,46 +212,29 @@ def interpolate_add_noise(angle, speed, points_per_sec, interpolation_order=3, n
 	noise : 
 	"""
 
-	# if timestep < 1:
-	# 	raise ValueError("Timestep < 1 entered. Minimum timestep is 1 second.")
-
 	if points_per_sec > 1:
 		raise ValueError("Timestep < 1s entered. Minimum timestep is 1s second. Maximum sensor frequency.")
 
-	# original time points, converted mins to s
-	#time = np.arange(len(df)) * 60 
-	# print('time', time)
-	# print(len(time))
-	
-	# time points for interpolated data set
-	print(len(angle))
+	#print(len(angle))
 	time_orig = np.arange(len(angle)) * 60
-	print(time_orig)
+	#print(time_orig)
 
 	#time_points = len(Time) * 60 * points_per_sec
 	time_int = np.arange( 0, time_orig[-1]+1, 1/points_per_sec ) #* 60
-	# time_int = np.range(time_orig[-1], )
-	print('timeint', time_int)
 
-	# time_int = np.linspace(0, time_orig[-1], time_orig[-1]/points_per_sec, endpoint=False) #* 60
-	# # time_int = np.range(time_orig[-1], )
-	# print('timeint', time_int)
-
-	# windSpeed = df['windspeed(m/s)']
-	# windAngle = df['windAngle(deg)']
-	
-	# order of interpolation data
 	order_poly = 3
 
-	random.seed(9002)
+	np.random.seed(9002)
 
 	# interpolation and added noise data
 	func = splrep(time_orig, speed, k=order_poly)
 	windSpeed_int = splev(time_int, func)
+	#np.random.seed(9002)
 	windSpeed_noisy = windSpeed_int + np.random.normal(0, noise_sd, size=windSpeed_int.shape)
 
 	func = splrep(time_orig, angle, k=order_poly)
 	windAngle_int = splev(time_int, func)
+	#np.random.seed(9002)
 	windAngle_noisy = windAngle_int + pi/2 * np.random.normal(0, noise_sd, size=windAngle_int.shape) # pi/2 * np.random.random(size=windAngle_int.shape)
 	
 
@@ -197,6 +246,7 @@ def interpolate_add_noise(angle, speed, points_per_sec, interpolation_order=3, n
 	plt.xlabel('time (mins')
 	plt.ylabel('wind speed (m/s)')
 	plt.legend()
+	#plt.show()
 	plt.close()
 
 	fig1, ax1 = plt.subplots()	
@@ -206,9 +256,10 @@ def interpolate_add_noise(angle, speed, points_per_sec, interpolation_order=3, n
 	plt.xlabel('time (mins')
 	plt.ylabel('wind angle (rads)')
 	plt.legend()
+	#plt.show()
 	plt.close()
 
-	#plt.show()
+	
 
 	speed = windSpeed_noisy
 	angle = windAngle_noisy
@@ -218,40 +269,13 @@ def interpolate_add_noise(angle, speed, points_per_sec, interpolation_order=3, n
 
 
 
-
-
-	# # organise into polar coordinates
-	# twp = [np.array([twd, tws]) for twd, tws in zip(windAngle_noisy, windSpeed_noisy)]
-
-	# # save the limits and timestep used
-	# T_ticks = np.arange(T[0], T[-1]+1, timestep)
-	# print(T_ticks)
-
-	# # integer series, length = number of time points
-	# T = np.arange(len(T))
-
-	# # plot to check
-	# fig1, ax1 = plt.subplots()	
-	# twp_ = np.stack(twp)
-	# # print(twp_)
-	# plt.plot(T, twp_[:, 0], label=f'angle')
-	# plt.plot(T, twp_[:, 1], label=f'speed')
-	# plt.xlabel('time (secs')
-	# plt.xticks(T, T_ticks)
-	# plt.legend()
-	# plt.savefig(f'{save_location}/wind_profile.pdf')
-	# plt.show()
-
-	# return T, twp, T_ticks
-
-
 def run_model(twp,
 			  Time_,
 			  axes,
 			  line_colour = 'k',
-			  latency = [0],#, 2, 4, 6],
-			  binary = [True, False],
-			  rudder_angles = [pi/8],
+			  latency = [0, 2, 4, 6],
+			  binary = [False, True],
+			  rudder_angles = [pi/4],
 			  sail_angles = [0],
 			  ):# , binary=False, Latency=0):
 	"""
@@ -267,15 +291,17 @@ def run_model(twp,
 	# set up output figure
 	lines = ['-', ':']
 	markers = ["o", "<",  "2", "3", "v", "4", "8", "s", "p", "P", "^", "*", "1","h", "H", "+", "x", "X", "D", ">",  "d", "|", "_"]
-	
-	# fig, ax = plt.subplots()
-	# fig2, ax2 = plt.subplots()
+	face_colours = [line_colour, 'none']
+
+
+	# print('twp', twp)
+	# angle = pol2cart(twp[0])
+	# Q = axes.quiver(0.5, -1, angle[0], angle[1], color=line_colour, units='x', scale=10)
+	# axes.annotate(r'$\theta_w$', xy=(0.5, -1), xytext=(0.45, -1.3), size=16)
 
 	data = []
 
-
-	for b, li in zip(binary, lines):
-		print(li)
+	for b, li, fc in zip(binary, lines, face_colours):
 		for l, ma in zip(latency, markers):
 			for r in rudder_angles:
 				for s in sail_angles:
@@ -295,365 +321,73 @@ def run_model(twp,
 					     latency = l)
 
 					positions = np.vstack([pol2cart(p) for p in d['position']])
+
 					#print([x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi])
-					full_turn = next((x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi), len(d['heading']))
-					#print('full_turn', full_turn)
-					positions = positions[: full_turn]
-					#ax.plot(positions[:,0], positions[:,1], '-o')	
-					#axes.plot(positions[:,0], positions[:,1], linestyle=li, color=line_colour, marker=ma)	
-					print('li', li)
-					axes.plot(positions[:,0], positions[:,1], marker=ma, color=line_colour, linestyle=li, label=str(round(twp[0][0],3)))	
 
-	#plt.show()
+					# rudder is angled
+					if r!=0:
+						# plot posisions until boat reaches angular rotation of 'stopping_angle'
+						stopping_angle = pi
 
+						# number of positions up to but not including position at which boat reaches 'stopping angle'
+						u_turn = next((x[0] for x in enumerate(d['heading']) if abs(x[1]) > stopping_angle), len(d['heading']))
 
-# def systematic_mode(time_points=20):# , binary=False, Latency=0):
-# 	"""
-# 	Systematically cycle through combination of each listed:
-# 		- wind direction
-# 		- wind speed
-# 		- sail angle (option to auto adjust to wind angle within program)
-# 		- rudder angle 
-# 	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
-# 	"""
-# 	# wind directions
-# 	#binary = [False, True]#[False, True]
-# 	latency = [2, 5, 10]
-# 	true_wind_dirs = [0, pi/6, pi/3, pi/2, pi*2/3, pi*5/6, pi, pi+pi/6, pi+pi/3, pi+pi/2, pi+pi*2/3, pi+pi*5/6, 2*pi]
-# 	true_wind_dirs = [0, pi/4, pi/2, pi*3/4, pi, pi+pi/4, pi+pi/2, pi+pi*3/4, 2*pi]
-# 	true_wind_dirs = [pi+pi/2]#, pi+pi/2, pi+pi*3/4, 2*pi]
-# 	true_wind_speed = [5]
-# 	rudder_angles = [pi/8]
-# 	sail_angles = [0]
-# 	#sail_angles = [0, pi/6, pi/3, pi/2, pi*2/3]
+						# select positions up to and including stopping angle
+						positions = np.array(positions[: u_turn+1])
+		
+						# convert to np array
+						#points = np.array(positions)	
 
-# 	# plot features
-# 	lines = ['-', ':']
-# 	markers = ["o",   "<",  "2", "3", "v", "4", "8", "s", "p", "P", "^", "*", "1","h", "H", "+", "x", "X", "D", ">",  "d", "|", "_"]
-# 	colours = cm.rainbow(np.linspace(0, 1, len(true_wind_dirs)))
+						# find average curvature of the trajectory			
+						curv = curvature(positions)
+
+						# the heading when the boat reaches the stpping angle
+						# final_heading = d['heading'][u_turn-1]
+						final_heading = d['heading'][u_turn]
+
+						# divide stopping angle by no of positions (no. of seconds) to make the turn ---> average angular velocity
+						ave_ang_vel = (final_heading / u_turn)
+						# divide curvature by no of positions (no. of seconds) to make the turn ---> average curvature
+						ave_curvature = (np.sum(curv) / u_turn)
 
 
-# 	T = np.arange(time_points)
-# 	timestep = 1
-# 	T_ticks = (T[0], T[-1], timestep)
-# 	data = []
-# 	fig, ax = plt.subplots()
-# 	fig2, ax2 = plt.subplots()
+						# string with info of average turning velocity
+						#info = ', ' + 'r$\-\.\lambda=$' + str(round(ave_ang_vel, 2))
+						info = ',  ' + r'$\bar\omega=$' + str(abs(round(ave_ang_vel, 2))) + 'rad/s'
 
-# 	binary=[True, False]
+						wind_syms_pos = 0.5, -1
+						scale = 10
 
+						print(b, l, ave_curvature)
 
-# 	# for b, l in zip(B, L):
-# 	for n, (b, li) in enumerate(zip(binary, lines)):
-# 		print(b)
-# 		for l, ma in zip(latency, markers):
-# 			for twd, co in zip(true_wind_dirs, colours):
-# 				print('WIND DIR =', twd)
-# 				for tws in true_wind_speed:
-# 					for r in rudder_angles:
-# 						for s in sail_angles:
-# 							print('binary=', n)
-# 							d = main(rudder_angle = r, 
-# 							     sail_angle = s,
-# 							     auto_adjust_sail = True,
-# 							     Time = T,
-# 							     time_ticks = T_ticks,
-# 							     true_wind_polar = [np.array([twd, tws])] * time_points,
-# 							     binary_actuator = b,
-# 							     binary_angles = four_bit_sail_angles,
-# 							     draw_boat_plot = False,
-# 							     save_figs = False,#True,
-# 							     show_figs = False, #True,
-# 							     fig_location = save_location,
-# 							     plot_force_coefficients = False,
-# 							     output_plot_title = f'binary: {b}, latency: {l}s, twd: {twd}rads, tws:{tws}m/s, rud ang:{r}rads, sail ang:{s}rads' ,
-# 							     latency = l)
-
-							
-# 							# print(np.vstack(d['position'])[:,0])
-# 							# print(np.vstack(d['position'])[:,1])
-# 							# print(np.vstack(d['position']))
-# 							#print('heading')
-# 							#print(d['heading'])
-# 							positions = np.vstack([pol2cart(p) for p in d['position']])
-# 							print([x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi])
-# 							#print(len([p for p in d['heading'] if abs(p)<pi]))
-# 								# TODO this is more elegent but not sure how it is working
-# 							full_turn = next((x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi), len(d['heading']))
-							
-# 							#full_turn = next((x[0] for x in enumerate(d['heading']) if abs(x[1]) > pi)) 
-# 							# if (full_turn == len(d['heading']) - 1):
-# 							# 	full_turn = 0
-# 							# print(next((i for i in range(10) if i**2 == 17), None))
-# 							# except:
-# 							# 	print('timeout')
-# 							# 	full_turn = 0
-# 							print('full_turn', full_turn)
-# 							positions = positions[: full_turn]
-# 							ax.plot(positions[:,0], positions[:,1], '-o', label=str(round(twd,3)))	
-# 							#ax2.plot(positions[:,0], positions[:,1], 'o', label=str(twd))	
-# 							ax2.plot(positions[:,0], positions[:,1], linestyle=li, color=co, marker=ma, label=str(twd))	
-
-# 							#full_turn = next(x[0] for x in enumerate(d['heading']) if x[1] > pi)
-
-					
-
-# 							# ax.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], '-o', label=str(twd))	
-# 							# ax2.plot(np.vstack(d['position'])[:,1], np.vstack(d['position'])[:,0], 'o', label=str(twd))	
-# 							#data.append(d)
-# 							#plt.plot(np.vstack(data['position'][0], np.vstack(data['position'][1])))
-# 		#ax2.legend()
-# 	plt.show()
+						# plot motion of boat
+						# trajectory
+						axes.plot(positions[:,0], positions[:,1], marker=ma, linestyle=li, label=r'$\theta_w=$' + str(float(round(twp[0][0],2))) + info)# + bin_label)
+						# axes.plot(positions[:,0], positions[:,1], color=line_colour, marker=ma, linestyle=li, label=r'$\theta_w=$' + str(float(round(twp[0][0],2))) + info)# + bin_label)	
+						# final position
+						axes.scatter(positions[:,0][-1], positions[:,1][-1], marker=ma, facecolors=fc, edgecolors=line_colour)	
+						# wind direction
+						axes.plot(0,0,'k>', markersize=10)
 
 
-	
-	#print(data)
+						# plot wind direction
+						angle = pol2cart(twp[0])
+						Q = axes.quiver(wind_syms_pos[0], wind_syms_pos[1], angle[0], angle[1], color=line_colour, units='x', scale=scale)
+						axes.annotate(r'$\theta_w$', xy=(0.5, -1), xytext=(0.45, -1.3), size=16)
+						plt.xlabel(r'x (m)' , fontsize=fontsize)
+						plt.ylabel(r'y (m)', fontsize=fontsize)
+						
 
-# def random_mode(time_points=50, binary=True, Latency=0):
-# 	"""
-# 	String of randomly generated wind values
-# 	Systematically cycle through combination of each listed:
-# 		- sail angle (option to auto adjust to wind angle within program)
-# 		- rudder angle 
-# 	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
-# 	"""
-# 	sail_angles = [0]
-# 	rudder_angles = [pi/4]
-
-# 	angles = [random.uniform(0, 2*pi) for i in range(time_points)]
-# 	mags = [random.normalvariate(5, 2) for i in range(time_points)]
-# 	# angles = np.random.uniform(0, 2*pi, size=(time_points))
-# 	# mags = np.random.normal(5, 2, size=(time_points))
-# 	twp = [np.array([a, m]) for a, m in zip(angles, mags)]
-# 	T = np.arange(time_points)
-# 	timestep = 1
-# 	T_ticks = (T[0], T[-1], timestep)
-
-# 	for r in rudder_angles:
-# 		for s in sail_angles:
-# 			main(rudder_angle = r, 
-# 			     sail_angle = s,
-# 			     auto_adjust_sail = True,
-# 			     Time = T,
-# 			     time_ticks = T_ticks,
-# 			     true_wind_polar = twp,
-# 			     binary_actuator = binary,
-# 			     binary_angles = four_bit_sail_angles,
-# 			     draw_boat_plot = True,
-# 			     save_figs = True,
-# 			     show_figs = False,
-# 			     fig_location = save_location,
-# 			     plot_force_coefficients = False,
-# 			     output_plot_title = 'random, binary: {binary}',
-# 			     latency = Latency)
-
-
-
-# empirically recorded wind data
-
-#wdID = 'PaddyB'
-#wdID = 'hillside'
-#wdID = 'streamside'
-
-def empirical_mode(wdID= 'PaddyA', data_points=slice(20,30), binary=True):
-	"""
-	String of empirically generated wind values
-	Systematically cycle through combination of each listed:
-		- sail angle (option to auto adjust to wind angle within program)
-		- rudder angle 
-	(Sail angle used as starting angle where sail angle is auto-adjuested in program)
-	"""
-
-	sail_angles = [0]
-	rudder_angles = [0]
-
-	# weather_data_streamside = pd.read_csv('weather_data_streamside_02-03-18_19-55_112cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]
-	# weather_data_hillside = pd.read_csv('weather_data_hillside_02-03-18_19-55.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]
-	# weather_data_paddyA = pd.read_csv('weather_data_paddy1_17-02-18_19-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]
-	# weather_data_paddyB = pd.read_csv('weather_data_paddy1_17-02-18_18-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]
-
-	if wdID == 'PaddyA':
-		weather_data = pd.read_csv('weather_data_paddy1_17-02-18_19-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]# weather_data_paddyA
-	elif wdID == 'PaddyB':
-		weather_data = pd.read_csv('weather_data_paddy1_17-02-18_18-45_45cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']]#[0:10]#weather_data_paddyB
-	elif wdID == 'hillside':
-		weather_data = pd.read_csv('weather_data_hillside_02-03-18_19-55.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]# weather_data_hillside
-	elif wdID == 'streamside':
-		weather_data = pd.read_csv('weather_data_streamside_02-03-18_19-55_112cm.TXT', sep='\t')[['windspeed(m/s)', 'windAngle(deg)']][725:1000]# weather_data_streamside
-
-	T, twp, T_ticks = empirical_data(weather_data, timestep=2, noise_sd=0.1, dp=data_points)
-
-	for r in rudder_angles:
-		for s in sail_angles:
-			main(rudder_angle = r, 
-			     sail_angle = s,
-			     auto_adjust_sail = True,
-			     Time = T,
-			     time_ticks = T_ticks,
-			     true_wind_polar = twp,
-			     binary_actuator = binary,
-			     binary_angles = four_bit_sail_angles,
-			     draw_boat_plot = True,
-			     save_figs = True,
-			     show_figs = False,
-			     fig_location = save_location,
-			     plot_force_coefficients = False,
-			     output_plot_title = f'start: {T_ticks[0]}, end: {T_ticks[1]}, timestep: {T_ticks[2]}, weather data: {wdID}, binary: {binary}',
-			     latency = Latency)
-
-
-# ### TEST CASES ###
-# def wind_data_repeated_per_timestep(angle=pi - (pi/6), mag=5):
-# 	"""
-# 	Fixed wind angle and magnitude
-# 	Wind data points repeated to match number of timesteps
-# 	"""
-# 	steps = 10
-# 	T = np.arange(steps)
-# 	twp = [np.array([angle, mag])] * steps
-# 	return T, twp
-
-
-
-
-# def random_wind_data():
-# 	"""
-# 	Randomly created wind data.
-# 	Timesteps generated to match number of points
-# 	"""
-# 	random_wind_dirs = true_wind_dirs
-# 	random.shuffle(random_wind_dirs)
-# 	twp = [np.array([r, 5]) for r in random_wind_dirs]
-# 	T = np.arange(len(twp))
-# 	return T, twp
-
-
-# def random_wind_data(time_points=10):
-# 	"""
-# 	Randomly created wind data.
-# 	Timesteps generated to match number of points
-# 	"""
-# 	angles = [random.uniform(0, 2*pi) for i in range(time_points)]
-# 	mags = [random.normalvariate(5, 2) for i in range(time_points)]
-# 	# angles = np.random.uniform(0, 2*pi, size=(time_points))
-# 	# mags = np.random.normal(5, 2, size=(time_points))
-# 	twp = [np.array([a, m]) for a, m in zip(angles, mags)]
-# 	T = np.arange(len(twp))
-# 	timestep = 1
-# 	T_ticks = (T[0], T[-1], timestep)
-# 	for r in rudder_angles:
-# 		for s in sail_angles:
-# 			main(rudder_angle = s, 
-# 			     sail_angle = r,
-# 			     auto_adjust_sail = True,
-# 			     Time = T,
-# 			     time_ticks = T_ticks,
-# 			     true_wind_polar = twp,
-# 			     binary_actuator = False,
-# 			     binary_angles = four_bit_sail_angles,
-# 			     save_figs = True,
-# 			     fig_location = save_location,
-# 			     plot_force_coefficients = False,
-# 			     weather_data_ID = wdID)
-
-
-# def cycle_wind_data():
-# 	"""
-# 	Systematially cycle through each wind speed and magnitude given in two lists
-# 	Timesteps generated to match number of points
-# 	"""
-# 	twp = [np.array([twd, tws]) for twd in true_wind_dirs for tws in true_wind_speed]
-# 	T = np.arange(len(twp))
-# 	timestep = 1
-# 	T_ticks = (T[0], T[-1], timestep)
-# 	return T, twp, T_ticks
-
-
-def empirical_data(df, timestep=2, noise_sd=0.1, dp=slice(20,30)):
-	"""
-	Uses data frame constraucted from input empirical data to create an array of true wind values.
-	Interpolated points and noise as optional inputs.
-
-	Inputs
-	df : the data frame
-	freq : entries per minute (raw data = 1)
-	noise : 
-	"""
-
-	if timestep < 1:
-		raise ValueError("Timestep < 1 entered. Minimum timestep is 1 second.")
-
-	windSpeed = df['windspeed(m/s)']
-	windAngle = np.deg2rad(df['windAngle(deg)'])
-
-	# original time points, converted mins to s
-	time = np.arange(len(df)) * 60
-	print('time', time)
-	print(len(time))
-	
-	# time points for interpolated data set
-	time_points = len(time) * (60/timestep)
-	time_int = np.arange(time[0], time[-1]+1, timestep)
-	print('time_int', time_int)
-	print(len(time_int))
-	
-	# order of interpolation data
-	order_poly = 3
-
-	# interpolation and added noise data
-	func = splrep(time, windSpeed, k=order_poly)
-	windSpeed_int = splev(time_int, func)
-	windSpeed_noisy = windSpeed_int + np.random.normal(0, noise_sd, size=windSpeed_int.shape)
-
-	func = splrep(time, windAngle, k=order_poly)
-	windAngle_int = splev(time_int, func)
-	windAngle_noisy = windAngle_int + pi/2 * np.random.normal(0, noise_sd, size=windAngle_int.shape) # pi/2 * np.random.random(size=windAngle_int.shape)
-
-	# plot data to check
-	# fig1, ax1 = plt.subplots()	
-	# plt.plot(time_int, windSpeed_noisy, label=f'speed noisy')
-	# plt.plot(time_int, windSpeed_int, '--', label=f'speed interp')
-	# plt.plot(time, windSpeed, label=f'speed raw')
-	# plt.xlabel('time (mins')
-	# plt.ylabel('wind speed (m/s)')
-	# plt.legend()
-
-	# fig1, ax1 = plt.subplots()	
-	# plt.plot(time_int, windAngle_noisy, label=f'angle noisy')
-	# plt.plot(time_int, windAngle_int, '--', label=f'angle interp')
-	# plt.plot(time, windAngle, label=f'angle raw')
-	# plt.xlabel('time (mins')
-	# plt.ylabel('wind angle (rads)')
-	# plt.legend()
-	#plt.show()
-
-	# organise into polar coordinates
-	twp = [np.array([twd, tws]) for twd, tws in zip(windAngle_noisy, windSpeed_noisy)]
-
-	# select a slice of the data
-	twp = twp[dp]
-	T = time_int[dp]
-
-	# save the limits and timestep used
-	T_ticks = np.arange(T[0], T[-1]+1, timestep)
-	print(T_ticks)
-
-	# integer series, length = number of time points
-	T = np.arange(len(T))
-
-	# plot to check
-	fig1, ax1 = plt.subplots()	
-	twp_ = np.stack(twp)
-	# print(twp_)
-	plt.plot(T, twp_[:, 0], label=f'angle')
-	plt.plot(T, twp_[:, 1], label=f'speed')
-	plt.xlabel('time (secs')
-	plt.xticks(T, T_ticks)
-	plt.legend()
-	plt.savefig(f'{save_location}/wind_profile.pdf')
-	plt.show()
-
-	return T, twp, T_ticks
+					# rudder is straight 	
+					else:
+						final_x_coord = positions[:,0][-1]
+						ave_vel = final_x_coord / len(twp)
+						#info = ',  ' + r'$\bar v=$' + str(round(ave_vel, 2)) + ' m/s'
+						s = 200 if b else 100 
+						axes.scatter(twp[0][0], final_x_coord, marker=ma, facecolors=fc, edgecolors=line_colour, s=s)	
+						plt.xlabel(r'$\theta_w$ (rads)' , fontsize=fontsize)
+						plt.ylabel(r'$\bar v $ (m/s)', fontsize=fontsize)
+						
 
 
 
@@ -662,8 +396,8 @@ def curvature(points):
 	"""
 	https://stackoverflow.com/questions/28269379/curve-curvature-in-numpy
 	"""
-	dx_dt = np.gradient(a[:, 0])
-	dy_dt = np.gradient(a[:, 1])
+	dx_dt = np.gradient(points[:, 0])
+	dy_dt = np.gradient(points[:, 1])
 	velocity = np.array([ [dx_dt[i], dy_dt[i]] for i in range(dx_dt.size)])
 	ds_dt = np.sqrt(dx_dt * dx_dt + dy_dt * dy_dt)
 	tangent = np.array([1/ds_dt] * 2).transpose() * velocity
@@ -683,39 +417,12 @@ def curvature(points):
 	acceleration = t_component * tangent + n_component * normal
 	return curvature
 
-# # T, twp, T_ticks = cycle_wind_data()
-# T, twp, T_ticks = random_wind_data(time_points=5)
-# T, twp, T_ticks = empirical_data(weather_data, timestep=2, noise_sd=0.1, dp=slice(20,30))
 
-
-# for r in rudder_angles:
-# 	for s in sail_angles:
-# 		main(rudder_angle = s, 
-# 		     sail_angle = r,
-# 		     auto_adjust_sail = True,
-# 		     Time = T,
-# 		     time_ticks = T_ticks,
-# 		     true_wind_polar = twp,
-# 		     binary_actuator = False,
-# 		     binary_angles = four_bit_sail_angles,
-# 		     save_figs = True,
-# 		     fig_location = save_location,
-# 		     plot_force_coefficients = False,
-# 		     weather_data_ID = wdID)
-#empirical_mode('PaddyB', binary=False)
-
-#random_mode(binary=True)
-
-# B = [False, True]
-# L = [0, 5, 10]
-
-# for b, l in zip(B, L):
-#systematic_mode(binary=False)#, Latency=l)
-
-#systematic_mode()#, Latency=l)
-systematic()
-random_wind()
+#systematic()
+# random_wind()
 empirical()
+
+
 
 
 
