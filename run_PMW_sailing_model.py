@@ -159,42 +159,43 @@ def empirical(time_points=100, generated_points_per_sec=0.5):
 	#print(keys)
 
 
-	for key, c in zip(keys, colours):
+	#for key, c in zip(keys, colours):
 
 		#print(key)
 
-		df = weather_data[key]
-		angle = list(df['windAngle(rad)'])
-		speed = list(df['windspeed(m/s)'])
-		angle, speed = interpolate_add_noise(angle, speed, generated_points_per_sec)
+		#df = weather_data[key]
+	df = weather_data['Paddy B']
+	angle = list(df['windAngle(rad)'])
+	speed = list(df['windspeed(m/s)'])
+	angle, speed = interpolate_add_noise(angle, speed, generated_points_per_sec)
 
-		# organise interpolated into polar coordinates
-		true_wind_polar = [np.array([twd, tws]) for twd, tws in zip(angle, speed)]
+	# organise interpolated into polar coordinates
+	true_wind_polar = [np.array([twd, tws]) for twd, tws in zip(angle, speed)]
 
-		# if interpolated points have a frequency of <1, create mulitple points per s
-		true_wind_polar = list(itertools.chain.from_iterable(itertools.repeat(twp, 3) for twp in true_wind_polar))[:time_points]
+	# if interpolated points have a frequency of <1, create mulitple points per s
+	true_wind_polar = list(itertools.chain.from_iterable(itertools.repeat(twp, 3) for twp in true_wind_polar))[:time_points]
 
-		true_wind_polar = np.vstack(true_wind_polar)
-		#print(true_wind_polar)
+	true_wind_polar = np.vstack(true_wind_polar)
+	#print(true_wind_polar)
 
-		#print(true_wind_polar)
+	#print(true_wind_polar)
 
-		Time = np.arange(time_points)
+	Time = np.arange(time_points)
 
-		# preview input data
-		fig1, ax1 = plt.subplots()	
-		plt.plot(Time, true_wind_polar[:, 0], label=f'angle')
-		plt.plot(Time, true_wind_polar[:, 1], label=f'speed')
-		plt.xlabel('time (secs')
-		plt.legend()
-		plt.savefig(f'{save_location}/wind_profile.pdf')
-		plt.close()
-		#plt.show()
+	# preview input data
+	fig1, ax1 = plt.subplots()	
+	plt.plot(Time, true_wind_polar[:, 0], label=f'angle')
+	plt.plot(Time, true_wind_polar[:, 1], label=f'speed')
+	plt.xlabel('time (secs')
+	plt.legend()
+	plt.savefig(f'{save_location}/wind_profile.pdf')
+	plt.close()
+	#plt.show()
 
-		run_model(true_wind_polar, 
-				  Time, 
-				  ax, 
-				  c)
+	run_model(true_wind_polar, 
+			  Time, 
+			  ax)#, 
+			  #c)
 
 	plt.show()
 
